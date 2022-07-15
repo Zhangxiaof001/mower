@@ -27,14 +27,14 @@
 class MowingBehavior : public Behavior {
 
 private:
-    bool skip_area;
+    bool skip_area;  // 可以跳过当前路径
     bool create_mowing_plan(int area_index);
 
     bool execute_mowing_plan();
 
     // Progress
     bool mowerEnabled = false;
-    std::vector<slic3r_coverage_planner::Path> currentMowingPaths;
+    std::vector<slic3r_coverage_planner::Path> currentMowingPaths;  // 全覆盖路径
 
 
 public:

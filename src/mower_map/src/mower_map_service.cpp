@@ -63,7 +63,7 @@ std::vector<mower_map::MapArea> mowing_areas;
 
 // The recorded docking pose. Note that this is the pose from which the docking attempt is started
 // I.e. the robot will drive to this pose and then drive forward
-geometry_msgs::Pose docking_point;
+geometry_msgs::Pose docking_point;  // 两片区域的对接点？
 bool show_fake_obstacle = false;
 geometry_msgs::Pose fake_obstacle_pose;
 
@@ -112,6 +112,7 @@ void visualizeAreas() {
         // Push it to mapAreas
         mapAreas.mowingAreas.push_back(mowingArea);
         {
+            // 绿色是区域边界
             // Create a marker
             fromMessage(mowingArea.area, p);
             std_msgs::ColorRGBA color;
@@ -130,6 +131,7 @@ void visualizeAreas() {
         }
         for (auto obstacle: mowingArea.obstacles) {
             fromMessage(obstacle, p);
+            // 红色是障碍物边界
             std_msgs::ColorRGBA color;
             color.r = 1.0;
             color.a = 1.0;
@@ -149,6 +151,7 @@ void visualizeAreas() {
 
     // Visualize Docking Point
     {
+        // 蓝色是对接点？
         std_msgs::ColorRGBA color;
         color.b = 1.0;
         color.a = 1.0;
@@ -194,12 +197,14 @@ void buildMap() {
 
     // loop through all areas and calculate a size where everything fits
     for (const auto &area: mowing_areas) {
+        // 遍历地图边界多边形轮廓点
         for (auto pt: area.area.points) {
             minX = std::min(minX, pt.x);
             maxX = std::max(maxX, pt.x);
             minY = std::min(minY, pt.y);
             maxY = std::max(maxY, pt.y);
         }
+        // 遍历障碍物的多边形轮廓点
         for (const auto &obstacle: area.obstacles) {
             for (const auto &pt: obstacle.points) {
                 minX = std::min(minX, pt.x);
@@ -210,12 +215,14 @@ void buildMap() {
         }
     }
     for (const auto &area: navigation_areas) {
+        // 遍历地图边界多边形轮廓点
         for (auto pt: area.area.points) {
             minX = std::min(minX, pt.x);
             maxX = std::max(maxX, pt.x);
             minY = std::min(minY, pt.y);
             maxY = std::max(maxY, pt.y);
         }
+        // 遍历障碍物的多边形轮廓点
         for (const auto &obstacle: area.obstacles) {
             for (const auto &pt: obstacle.points) {
                 minX = std::min(minX, pt.x);
@@ -353,6 +360,7 @@ void buildMap() {
 
     grid_map::GridMapCvConverter::addLayerFromImage<unsigned char, 1>(cv_map, "navigation_area", map);
 
+    // 发布栅格地图
     nav_msgs::OccupancyGrid msg;
     grid_map::GridMapRosConverter::toOccupancyGrid(map, "navigation_area", 0.0, 1.0, msg);
     map_pub.publish(msg);
@@ -378,6 +386,8 @@ void saveMapToFile() {
     bag.write("docking_point", ros::Time::now(), docking_point);
 
     bag.close();
+
+    ROS_INFO("Success save map to map.bag file");
 }
 
 /**
@@ -387,10 +397,13 @@ void saveMapToFile() {
  * @param append True to append the loaded map to the current one.
  */
 void readMapFromFile(const std::string& filename, bool append = false) {
+    // 清除区域地图
     if (!append) {
         mowing_areas.clear();
         navigation_areas.clear();
     }
+    
+    // 地图文件是bag类型，使用ros::bag加载地图
     rosbag::Bag bag;
     try {
         bag.open(filename);
@@ -419,12 +432,15 @@ void readMapFromFile(const std::string& filename, bool append = false) {
     {
         bool found_docking_point = false;
         rosbag::View view(bag, rosbag::TopicQuery("docking_point"));
+        // 如果发现了docking_point, 就获取
         for (rosbag::MessageInstance const m: view) {
             auto pt = m.instantiate<geometry_msgs::Pose>();
             docking_point = *pt;
             found_docking_point = true;
             break;
         }
+
+        // 如果没有发现docking_point, 初始化为起始点(0,0,0)
         if (!found_docking_point) {
             geometry_msgs::Pose empty;
             empty.orientation.w = 1.0;
@@ -432,11 +448,11 @@ void readMapFromFile(const std::string& filename, bool append = false) {
         }
     }
 
-
     ROS_INFO_STREAM("Loaded " << mowing_areas.size() << " mowing areas and " << navigation_areas.size()
                               << " navigation areas from file.");
 }
 
+// 添加割草区域
 bool addMowingArea(mower_map::AddMowingAreaSrvRequest &req, mower_map::AddMowingAreaSrvResponse &res) {
     ROS_INFO_STREAM("Got addMowingArea call");
 
@@ -446,6 +462,7 @@ bool addMowingArea(mower_map::AddMowingAreaSrvRequest &req, mower_map::AddMowing
     return true;
 }
 
+// 得到割草区域
 bool getMowingArea(mower_map::GetMowingAreaSrvRequest &req, mower_map::GetMowingAreaSrvResponse &res) {
     ROS_INFO_STREAM("Got getMowingArea call with index: " << req.index);
 
@@ -459,7 +476,7 @@ bool getMowingArea(mower_map::GetMowingAreaSrvRequest &req, mower_map::GetMowing
     return true;
 }
 
-
+// 删除割草区域
 bool
 deleteMowingArea(mower_map::DeleteMowingAreaSrvRequest &req, mower_map::DeleteMowingAreaSrvResponse &res) {
     ROS_INFO_STREAM("Got delete mowing area call with index: " << req.index);
@@ -477,6 +494,7 @@ deleteMowingArea(mower_map::DeleteMowingAreaSrvRequest &req, mower_map::DeleteMo
     return true;
 }
 
+// 根据割草区域的索引，转换为导航区域
 bool
 convertToNavigationArea(mower_map::ConvertToNavigationAreaSrvRequest &req,
                         mower_map::ConvertToNavigationAreaSrvResponse &res) {
@@ -487,6 +505,7 @@ convertToNavigationArea(mower_map::ConvertToNavigationAreaSrvRequest &req,
         return false;
     }
 
+    // 将割草区域转换为导航区域
     navigation_areas.push_back(mowing_areas[req.index]);
 
     mowing_areas.erase(mowing_areas.begin() + req.index);
@@ -497,6 +516,7 @@ convertToNavigationArea(mower_map::ConvertToNavigationAreaSrvRequest &req,
     return true;
 }
 
+// 读取bag文件添加地图
 bool appendMapFromFile(mower_map::AppendMapSrvRequest &req, mower_map::AppendMapSrvResponse &res) {
     ROS_INFO_STREAM("Appending maps from: " << req.bagfile);
 
@@ -509,6 +529,7 @@ bool appendMapFromFile(mower_map::AppendMapSrvRequest &req, mower_map::AppendMap
     return true;
 }
 
+// 设置不同区域的对接点
 bool setDockingPoint(mower_map::SetDockingPointSrvRequest &req, mower_map::SetDockingPointSrvResponse &res) {
     ROS_INFO_STREAM("Setting Docking Point");
 
@@ -520,7 +541,7 @@ bool setDockingPoint(mower_map::SetDockingPointSrvRequest &req, mower_map::SetDo
     return true;
 }
 
-
+// 得到区域的对接点
 bool getDockingPoint(mower_map::GetDockingPointSrvRequest &req, mower_map::GetDockingPointSrvResponse &res) {
     ROS_INFO_STREAM("Getting Docking Point");
 
@@ -528,6 +549,8 @@ bool getDockingPoint(mower_map::GetDockingPointSrvRequest &req, mower_map::GetDo
 
     return true;
 }
+
+// 添加虚拟障碍物
 bool setNavPoint(mower_map::SetNavPointSrvRequest &req, mower_map::SetNavPointSrvResponse &res) {
     ROS_INFO_STREAM("Setting Nav Point");
 
@@ -540,7 +563,7 @@ bool setNavPoint(mower_map::SetNavPointSrvRequest &req, mower_map::SetNavPointSr
     return true;
 }
 
-
+// 清除虚拟障碍物
 bool clearNavPoint(mower_map::ClearNavPointSrvRequest &req, mower_map::ClearNavPointSrvResponse &res) {
     ROS_INFO_STREAM("Clearing Nav Point");
 
@@ -556,8 +579,10 @@ int main(int argc, char **argv) {
     ros::init(argc, argv, "mower_map_service");
 
     ros::NodeHandle n;
+    // 发布栅格地图
     map_pub = n.advertise<nav_msgs::OccupancyGrid>("mower_map_service/map", 10, true);
     map_areas_pub = n.advertise<mower_map::MapAreas>("mower_map_service/map_areas", 10, true);
+    // 地图可视化
     map_server_viz_array_pub = n.advertise<visualization_msgs::MarkerArray>("mower_map_service/map_viz", 10, true);
 
     // Load the default map file
@@ -565,22 +590,29 @@ int main(int argc, char **argv) {
 
     buildMap();
 
-
+    // 添加割草区域的服务
     ros::ServiceServer add_area_srv = n.advertiseService("mower_map_service/add_mowing_area", addMowingArea);
+    // 得到割草区域的服务
     ros::ServiceServer get_area_srv = n.advertiseService("mower_map_service/get_mowing_area", getMowingArea);
+    // 删除割草区域的服务
     ros::ServiceServer delete_area_srv = n.advertiseService("mower_map_service/delete_mowing_area", deleteMowingArea);
+    // 读取bag文件添加地图
     ros::ServiceServer append_maps_srv = n.advertiseService("mower_map_service/append_maps", appendMapFromFile);
+    // 根据割草区域的索引，转换为导航区域
     ros::ServiceServer convert_maps_srv = n.advertiseService("mower_map_service/convert_to_navigation_area",
                                                              convertToNavigationArea);
+    // 设置不同区域的对接点
     ros::ServiceServer set_docking_point_srv = n.advertiseService("mower_map_service/set_docking_point",
                                                                   setDockingPoint);
+    // 得到区域的对接点
     ros::ServiceServer get_docking_point_srv = n.advertiseService("mower_map_service/get_docking_point",
                                                                   getDockingPoint);
+    // 添加虚拟障碍物
     ros::ServiceServer set_nav_point_srv = n.advertiseService("mower_map_service/set_nav_point",
                                                                   setNavPoint);
+    // 清除虚拟障碍物
     ros::ServiceServer clear_nav_point_srv = n.advertiseService("mower_map_service/clear_nav_point",
                                                                   clearNavPoint);
-
 
     ros::spin();
     return 0;

@@ -34,14 +34,17 @@ extern dynamic_reconfigure::Server<mower_logic::MowerLogicConfig> *reconfigServe
 
 MowingBehavior MowingBehavior::INSTANCE;
 
+// 获取当前状态名
 std::string MowingBehavior::state_name() {
     return "MOWING";
 }
 
 Behavior *MowingBehavior::execute() {
 
+    // 当发送回家控制指令的时候，将paused设为true
     while (ros::ok() && !paused) {
-        if (currentMowingPaths.empty() && !create_mowing_plan(last_config.current_area)) {
+        // 根据地图得到全覆盖路径
+        if (currentMowingPaths.empty() && !create_mowing_plan(last_config.current_area)) {  // 0
             ROS_INFO_STREAM("Could not create mowing plan, docking");
             // Start again from first area next time.
             reset();
@@ -58,19 +61,19 @@ Behavior *MowingBehavior::execute() {
             last_config.current_area++;
             reconfigServer->updateConfig(last_config);
         }
-    }
+    }  // end while
 
     if (!ros::ok()) {
         // something went wrong
         return nullptr;
     }
+
     // we got paused, go to docking station
     return &DockingBehavior::INSTANCE;
 }
 
 void MowingBehavior::enter() {
     skip_area = false;
-
 }
 
 void MowingBehavior::exit() {
@@ -91,12 +94,15 @@ bool MowingBehavior::mower_enabled() {
     return mowerEnabled;
 }
 
+// 创建全覆盖路径
 bool MowingBehavior::create_mowing_plan(int area_index) {
     ROS_INFO_STREAM("Creating mowing plan for area: " << area_index);
     // Delete old plan and progress.
+    // 清除当前割草路径
     currentMowingPaths.clear();
 
     // get the mowing area
+    // 1.先获取地图
     mower_map::GetMowingAreaSrv mapSrv;
     mapSrv.request.index = area_index;
     if (!mapClient.call(mapSrv)) {
@@ -123,6 +129,7 @@ bool MowingBehavior::create_mowing_plan(int area_index) {
 
 
     // calculate coverage
+    // 2. 计算全覆盖路径
     slic3r_coverage_planner::PlanPath pathSrv;
     pathSrv.request.angle = angle;
     pathSrv.request.outline_count = config.outline_count;
@@ -141,6 +148,7 @@ bool MowingBehavior::create_mowing_plan(int area_index) {
     return true;
 }
 
+// 有了全覆盖路径后，执行割草任务
 bool MowingBehavior::execute_mowing_plan() {
 
     // loop through all mowingPaths to execute the plan fully.
@@ -150,11 +158,10 @@ bool MowingBehavior::execute_mowing_plan() {
         mowerEnabled = true;
 
         auto &path = currentMowingPaths.front();
-
         ROS_INFO_STREAM("Path length: " << path.path.poses.size() << " poses.");
 
-
         // Drive to first point of the path segment
+        // 1.先导航去路径的初始点
         {
             if(path.is_outline && last_config.add_fake_obstacle) {
                 mower_map::SetNavPointSrv set_nav_point_srv;
@@ -163,10 +170,12 @@ bool MowingBehavior::execute_mowing_plan() {
                 sleep(1);
             }
 
+            // 调用move_base
             mbf_msgs::MoveBaseGoal moveBaseGoal;
             moveBaseGoal.target_pose = path.path.poses.front();
             moveBaseGoal.controller = "FTCPlanner";
             auto result = mbfClient->sendGoalAndWait(moveBaseGoal);
+            // 如果不成功，就丢掉当前目标点
             if (result.state_ != result.SUCCEEDED) {
                 // We cannot reach the start point, drop the current path segment
                 ROS_ERROR_STREAM("Could not reach goal, quitting. status was: " << result.state_);
@@ -183,6 +192,7 @@ bool MowingBehavior::execute_mowing_plan() {
 
 
         // Execute the path segment and either drop it if we finished it successfully or trim it if we were paused
+        // 2. 然后执行路径跟踪
         {
             mbf_msgs::ExePathGoal exePathGoal;
 
@@ -205,12 +215,15 @@ bool MowingBehavior::execute_mowing_plan() {
                     current_status.state_ == actionlib::SimpleClientGoalState::PENDING) {
                     // path is being executed, everything seems fine.
                     // check if we should pause or abort mowing
+                    // 如果skip_area为true，跳过当前工作区域，如果有别的区域需要工作，可以继续执行
+                    // 如果paused为true，直接回家
                     if (paused || skip_area) {
                         ROS_INFO_STREAM("cancel mowing was requested - stopping path execution.");
                         mbfClientExePath->cancelAllGoals();
                         break;
                     }
                 } else {
+                    // 如果任务出现异常，跳出循环
                     ROS_INFO_STREAM("got status " << current_status.state_ << " - stopping path execution.");
                     // we're done, break out of the loop
                     break;
@@ -219,6 +232,7 @@ bool MowingBehavior::execute_mowing_plan() {
                 r.sleep();
             }
 
+            // 跳过当前工作区域，如果有别的区域需要工作，可以继续执行
             if(skip_area) {
                 // remove all paths in current area and return true
                 mowerEnabled = false;
@@ -268,6 +282,7 @@ bool MowingBehavior::execute_mowing_plan() {
     return currentMowingPaths.empty();
 }
 
+// 当发送回家控制指令的时候，将paused设为true
 void MowingBehavior::command_home() {
     this->pause();
 }

@@ -27,6 +27,7 @@ extern bool setGPS(bool enabled);
 UndockingBehavior UndockingBehavior::INSTANCE(&MowingBehavior::INSTANCE);
 UndockingBehavior UndockingBehavior::RETRY_INSTANCE(&DockingBehavior::INSTANCE);
 
+// 获取当前状态名
 std::string UndockingBehavior::state_name() {
     return "UNDOCKING";
 }
@@ -34,6 +35,7 @@ std::string UndockingBehavior::state_name() {
 Behavior *UndockingBehavior::execute() {
 
     // get robot's current pose from odometry.
+    // 解算偏航角yaw
     nav_msgs::Odometry odom = last_odom;
     tf2::Quaternion quat;
     tf2::fromMsg(odom.pose.pose.orientation, quat);
@@ -47,13 +49,18 @@ Behavior *UndockingBehavior::execute() {
     nav_msgs::Path path;
 
 
-    int undock_point_count = config.undock_distance * 10.0;
+    // 从当前位置，后退2m
+    int undock_point_count = config.undock_distance * 10.0;  // undock_distance is 2
+    ROS_INFO("undock_point_count : %d", undock_point_count);
     for (int i = 0; i < undock_point_count; i++) {
         geometry_msgs::PoseStamped docking_pose_stamped_front;
         docking_pose_stamped_front.pose = odom.pose.pose;
-        docking_pose_stamped_front.header = odom.header;
+        docking_pose_stamped_front.header = odom.header;  // 仿真中原始坐标系为base_link
+        docking_pose_stamped_front.header.frame_id = "map";
+        // 反方向取，一共后退2m
         docking_pose_stamped_front.pose.position.x -= cos(yaw) * (i / 10.0);
         docking_pose_stamped_front.pose.position.y -= sin(yaw) * (i / 10.0);
+        ROS_INFO("docking path : (x:%f, y:%f))",docking_pose_stamped_front.pose.position.x, docking_pose_stamped_front.pose.position.y);
         path.poses.push_back(docking_pose_stamped_front);
     }
 
@@ -75,14 +82,14 @@ Behavior *UndockingBehavior::execute() {
         return nullptr;
     }
 
-
+    // 退出成功，等待gps信号
     ROS_INFO_STREAM("Undock success. Waiting for GPS.");
-    bool hasGps = waitForGPS();
+    // bool hasGps = waitForGPS();
 
-    if (!hasGps) {
-        ROS_ERROR_STREAM("Could not get GPS.");
-        return nullptr;
-    }
+    // if (!hasGps) {
+    //     ROS_ERROR_STREAM("Could not get GPS.");
+    //     return nullptr;
+    // }
 
     // TODO return mow area
     return nextBehavior;
@@ -90,24 +97,31 @@ Behavior *UndockingBehavior::execute() {
 }
 
 void UndockingBehavior::enter() {
-    reset();
+  reset();
 
-    // Get the docking pose in map
-    mower_map::GetDockingPointSrv get_docking_point_srv;
-    dockingPointClient.call(get_docking_point_srv);
-    docking_pose_stamped.pose = get_docking_point_srv.response.docking_pose;
-    docking_pose_stamped.header.frame_id = "map";
-    docking_pose_stamped.header.stamp = ros::Time::now();
+  // Get the docking pose in map
+  // 获取对接点
+  mower_map::GetDockingPointSrv get_docking_point_srv;
+  dockingPointClient.call(get_docking_point_srv);
+  docking_pose_stamped.pose = get_docking_point_srv.response.docking_pose;
+  docking_pose_stamped.header.frame_id = "map";
+  docking_pose_stamped.header.stamp = ros::Time::now();
+  ROS_INFO("Get the docking pose in map : (x:%f, y:%f, z:%f)",
+           docking_pose_stamped.pose.position.x,
+           docking_pose_stamped.pose.position.y,
+           docking_pose_stamped.pose.position.z);
 }
 
 void UndockingBehavior::exit() {
 
 }
 
+// 设置为不需要gps
 void UndockingBehavior::reset() {
     gpsRequired = false;
 }
 
+// 返回是否需要gps
 bool UndockingBehavior::needs_gps() {
     return gpsRequired;
 }
@@ -117,10 +131,12 @@ bool UndockingBehavior::mower_enabled() {
     return false;
 }
 
+// 等待gps
 bool UndockingBehavior::waitForGPS() {
     gpsRequired = false;
     setGPS(true);
     ros::Rate odom_rate(1.0);
+    // 一直等待gps
     while (ros::ok()) {
         if (last_odom.pose.covariance[0] < 0.05) {
             ROS_INFO("Got good gps, let's go");
@@ -130,6 +146,7 @@ bool UndockingBehavior::waitForGPS() {
             odom_rate.sleep();
         }
     }
+    // 如果节点挂掉，返回false
     if (!ros::ok()) {
         return false;
     }

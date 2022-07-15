@@ -35,9 +35,10 @@ class DockingBehavior : public Behavior {
 public:
     static DockingBehavior INSTANCE;
 private:
-    uint retryCount;
+    uint retryCount;  // 如果失败，尝试的次数
+    // we only need GPS if we're in approach mode
     bool inApproachMode;
-    geometry_msgs::PoseStamped docking_pose_stamped;
+    geometry_msgs::PoseStamped docking_pose_stamped;  // 对接点
 
     bool approach_docking_point();
 

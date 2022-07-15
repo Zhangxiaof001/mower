@@ -386,7 +386,6 @@ bool setGpsState(mower_msgs::GPSControlSrvRequest &req, mower_msgs::GPSControlSr
 int main(int argc, char **argv) {
     ros::init(argc, argv, "mower_odometry");
 
-
     ros::NodeHandle n;
     ros::NodeHandle paramNh("~");
 

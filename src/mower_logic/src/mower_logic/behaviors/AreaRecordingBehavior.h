@@ -46,10 +46,11 @@ public:
     static AreaRecordingBehavior INSTANCE;
 private:
 
-    bool has_odom = false;
+    bool has_odom = false;  // 是否接收到定位
 
+    bool press_start_ = false;
     sensor_msgs::Joy last_joy;
-    nav_msgs::Odometry last_odom;
+    nav_msgs::Odometry last_odom;  // 定位
 
     ros::Publisher marker_pub;
     ros::Publisher marker_array_pub;
@@ -58,8 +59,8 @@ private:
 
     ros::ServiceClient add_mowing_area_client, set_docking_point_client;
 
-    bool has_first_docking_pos = false;
-    geometry_msgs::Pose first_docking_pos;
+    bool has_first_docking_pos = false;  // 是否接收到第一个对接点
+    geometry_msgs::Pose first_docking_pos;  // 第一个对接点的位姿
 
     // true, if we should be recording the current data into a polygon
     bool poly_recording_enabled = false;

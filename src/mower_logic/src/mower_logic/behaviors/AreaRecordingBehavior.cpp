@@ -37,14 +37,16 @@ std::string AreaRecordingBehavior::state_name() {
 Behavior *AreaRecordingBehavior::execute() {
     bool error = false;
     ros::Rate inputDelay(ros::Duration().fromSec(0.1));
+    // 这里好像没法退出当前录制区域状态？？？
     while(ros::ok() && !paused) {
         mower_map::MapArea result;
         bool has_outline = false;
 
-
-
+        // 按下Y按钮，finished_all设为true,结束录制区域
         while (ros::ok() && !finished_all && !error && !paused) {
+          ROS_INFO("wait for record area");
 
+            // 按下X按钮，开始设置docking_position
             if(set_docking_position) {
                 geometry_msgs::Pose pos;
                 if(getDockingPosition(pos)) {
@@ -61,13 +63,17 @@ Behavior *AreaRecordingBehavior::execute() {
                 set_docking_position = false;
             }
 
+            // 按一次B按钮开始录制区域，再按一次取消录制，但不结束
             if (poly_recording_enabled) {
                 geometry_msgs::Polygon poly;
+                // 计算新的多边形轮廓
                 bool success = recordNewPolygon(poly);
                 if (success) {
+                    // 如果成功记录多边形
                     if (!has_outline) {
                         // first polygon is outline
                         has_outline = true;
+                        // 将区域的边界存进去
                         result.area = poly;
 
                         std_msgs::ColorRGBA color;
@@ -82,6 +88,7 @@ Behavior *AreaRecordingBehavior::execute() {
                         markers.markers.push_back(marker);
                     } else {
                         // we already have an outline, add obstacles
+                        // 将障碍物边界存进去
                         result.obstacles.push_back(poly);
 
                         std_msgs::ColorRGBA color;
@@ -98,6 +105,7 @@ Behavior *AreaRecordingBehavior::execute() {
                     }
 
                 } else {
+                    // 如果记录多边形失败，直接退出record
                     error = true;
                     ROS_ERROR_STREAM("Error during poly record");
                 }
@@ -105,8 +113,7 @@ Behavior *AreaRecordingBehavior::execute() {
             }
 
             inputDelay.sleep();
-        }
-
+        }  // end record
 
         if(!error && has_outline) {
             ROS_INFO_STREAM("Area recording completed.");
@@ -124,10 +131,13 @@ Behavior *AreaRecordingBehavior::execute() {
         error = false;
         // reset finished all in case we want to record a second area
         finished_all = false;
+        
+        // 直接跳出，目前只录制一个区域的地图
+        // 后续可以增加一个按钮来结束录制
+        break;
     }
 
     return &IdleBehavior::INSTANCE;
-
 }
 
 void AreaRecordingBehavior::enter() {
@@ -138,21 +148,18 @@ void AreaRecordingBehavior::enter() {
     set_docking_position = false;
     markers = visualization_msgs::MarkerArray();
 
-
-
     add_mowing_area_client = n->serviceClient<mower_map::AddMowingAreaSrv>("mower_map_service/add_mowing_area");
     set_docking_point_client = n->serviceClient<mower_map::SetDockingPointSrv>("mower_map_service/set_docking_point");
 
     marker_pub = n->advertise<visualization_msgs::Marker>("area_recorder/progress_visualization", 10);
     marker_array_pub = n->advertise<visualization_msgs::MarkerArray>("area_recorder/progress_visualization_array", 10);
 
-
     ROS_INFO_STREAM("Starting recording area");
 
     ROS_INFO_STREAM("Subscribing to /joy for user input");
     joy_sub = n->subscribe("/joy", 100,
                                           &AreaRecordingBehavior::joy_received, this);
-    odom_sub = n->subscribe("mower/odom", 100,
+    odom_sub = n->subscribe("/odom", 100,
                                            &AreaRecordingBehavior::odom_received, this);
 
 }
@@ -184,34 +191,40 @@ void AreaRecordingBehavior::odom_received(const nav_msgs::Odometry &odom_msg) {
     has_odom = true;
 }
 void AreaRecordingBehavior::joy_received(const sensor_msgs::Joy &joy_msg) {
-
-    if (joy_msg.buttons[1] && !last_joy.buttons[1]) {
+    if (press_start_) {
+      if (joy_msg.buttons[1] && !last_joy.buttons[1]) {
         // B was pressed. We toggle recording state
         ROS_INFO_STREAM("B PRESSED");
         poly_recording_enabled = !poly_recording_enabled;
+      }
+      // Y was pressed, we finish the recording
+      if (joy_msg.buttons[3] && !last_joy.buttons[3]) {
+          ROS_INFO_STREAM("Y PRESSED");
+          // stop current poly recording
+          poly_recording_enabled = false;
+
+          // set finished
+          finished_all = true;
+      }
+
+      // X was pressed, set base position if we are not currently recording
+      if (joy_msg.buttons[2] && !last_joy.buttons[2]) {
+          ROS_INFO_STREAM("X PRESSED");
+          set_docking_position = true;
+      }
+    } else {
+      ROS_INFO("Please press start button");
     }
-    // Y was pressed, we finish the recording
-    if (joy_msg.buttons[3] && !last_joy.buttons[3]) {
-        ROS_INFO_STREAM("Y PRESSED");
-        // stop current poly recording
-        poly_recording_enabled = false;
-
-        // set finished
-        finished_all = true;
+    
+    if (joy_msg.buttons[7]) {
+      press_start_ = true;
+      ROS_INFO("Start PRESSED!");
     }
-
-    // X was pressed, set base position if we are not currently recording
-    if (joy_msg.buttons[2] && !last_joy.buttons[2]) {
-        ROS_INFO_STREAM("X PRESSED");
-        set_docking_position = true;
-    }
-
-
 
     last_joy = joy_msg;
 }
 
-
+// 记录新的多边形轮廓
 bool AreaRecordingBehavior::recordNewPolygon(geometry_msgs::Polygon &polygon) {
 
     ROS_INFO_STREAM("recordNewPolygon");
@@ -282,6 +295,7 @@ bool AreaRecordingBehavior::recordNewPolygon(geometry_msgs::Polygon &polygon) {
             tf2::Vector3 last_point(last.x, last.y, 0.0);
             tf2::Vector3 current_point(pose_in_map.position.x, pose_in_map.position.y, 0.0);
 
+            // 当两个点的距离大于0.1m，才会保存
             if ((current_point - last_point).length() > 0.1) {
                 geometry_msgs::Point32 pt;
                 pt.x = pose_in_map.position.x;
@@ -314,27 +328,26 @@ bool AreaRecordingBehavior::recordNewPolygon(geometry_msgs::Polygon &polygon) {
             ROS_INFO_STREAM("Finished Recording polygon");
             break;
         }
-    }
+    }  // end while
 
     marker.action = visualization_msgs::Marker::DELETE;
     marker_pub.publish(marker);
-
-
 
     return success;
 }
 
 bool AreaRecordingBehavior::getDockingPosition(geometry_msgs::Pose &pos) {
     if(!has_first_docking_pos) {
+        // 记录第一个对接点的位姿
         ROS_INFO_STREAM("Recording first docking position");
-        auto odom_ptr = ros::topic::waitForMessage<nav_msgs::Odometry>("mower/odom", ros::Duration(1, 0));
+        auto odom_ptr = ros::topic::waitForMessage<nav_msgs::Odometry>("/odom", ros::Duration(1, 0));
 
         first_docking_pos = odom_ptr->pose.pose;
         has_first_docking_pos = true;
         return false;
     } else {
         ROS_INFO_STREAM("Recording second docking position");
-        auto odom_ptr = ros::topic::waitForMessage<nav_msgs::Odometry>("mower/odom", ros::Duration(1, 0));
+        auto odom_ptr = ros::topic::waitForMessage<nav_msgs::Odometry>("/odom", ros::Duration(1, 0));
 
         pos.position = odom_ptr->pose.pose.position;
 

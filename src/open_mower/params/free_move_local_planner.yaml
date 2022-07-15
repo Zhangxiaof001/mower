@@ -1,6 +1,6 @@
 FreePlanner:
 
-  odom_topic: /mower/odom
+  odom_topic: /odom
   map_frame: /map
 
     # Trajectory

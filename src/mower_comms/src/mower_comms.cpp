@@ -36,10 +36,10 @@
 #include "vesc_driver/vesc_interface.h"
 
 
-ros::Publisher status_pub;
-ros::Publisher mower_imu_pub;
-ros::Publisher sensor_imu_pub;
-ros::Publisher sensor_mag_pub;
+ros::Publisher status_pub;  // 发布割草机状态
+ros::Publisher mower_imu_pub;  // 发布原始imu数据
+ros::Publisher sensor_imu_pub;  // 发布转换后的imu数据
+ros::Publisher sensor_mag_pub;  // 发布转换后的磁力计数据
 
 COBS cobs;
 
@@ -56,12 +56,13 @@ bool ll_clear_emergency = false;
 bool allow_send = false;
 
 // Current speeds (duty cycle) for the three ESCs
+// speed_l : 左轮速度、speed_r : 右轮速度、speed_mow : 割草电机速度
 float speed_l = 0, speed_r = 0, speed_mow = 0;
 
 // Serial port and buffer for the low level connection
 serial::Serial serial_port;
 uint8_t out_buf[1000];
-ros::Time last_cmd_vel(0.0);
+ros::Time last_cmd_vel(0.0);  // 上一次接收到指令的时间戳
 
 boost::crc_ccitt_type crc;
 
@@ -76,32 +77,39 @@ struct ll_status last_ll_status = {0};
 sensor_msgs::MagneticField sensor_mag_msg;
 sensor_msgs::Imu sensor_imu_msg;
 
+// 高等级用户控制服务
 ros::ServiceClient highLevelClient;
 
+// 双轮间距
 #define WHEEL_DISTANCE_M 0.325
 
 bool is_emergency() {
     return emergency_high_level || emergency_low_level;
 }
 
+// 发布速度和心跳检测
 void publishActuators() {
 // emergency or timeout -> send 0 speeds
+    // 如果紧急状态，立刻停止
     if (is_emergency()) {
         speed_l = 0;
         speed_r = 0;
         speed_mow = 0;
     }
+    // 上一次接收到的控制指令时间间隔大于1s，停止但不关闭割草电机
     if (ros::Time::now() - last_cmd_vel > ros::Duration(1.0)) {
         speed_l = 0;
         speed_r = 0;
 
     }
+    // 上一次接收到的控制指令时间间隔大于25s，立刻停止
     if (ros::Time::now() - last_cmd_vel > ros::Duration(25.0)) {
         speed_l = 0;
         speed_r = 0;
         speed_mow = 0;
     }
 
+    // 设置占空比
     mow_vesc_interface->setDutyCycle(speed_mow);
     // We need to invert the speed, because the ESC has the same config as the left one, so the motor is running in the "wrong" direction
     left_vesc_interface->setDutyCycle(speed_l);
@@ -123,6 +131,7 @@ void publishActuators() {
     out_buf[encoded_size] = 0;
     encoded_size++;
 
+    // 将心跳检测写入串行端口
     if (serial_port.isOpen() && allow_send) {
         try {
             serial_port.write(out_buf, encoded_size);
@@ -132,7 +141,7 @@ void publishActuators() {
     }
 }
 
-
+// 转换数据类型
 void convertStatus(vesc_driver::VescStatusStruct &vesc_status, mower_msgs::ESCStatus &ros_esc_status) {
     if (vesc_status.connection_state != vesc_driver::VESC_CONNECTION_STATE::CONNECTED &&
         vesc_status.connection_state != vesc_driver::VESC_CONNECTION_STATE::CONNECTED_INCOMPATIBLE_FW) {
@@ -154,6 +163,7 @@ void convertStatus(vesc_driver::VescStatusStruct &vesc_status, mower_msgs::ESCSt
     ros_esc_status.temperature_pcb = vesc_status.temperature_pcb;
 }
 
+// 发布机器状态
 void publishStatus() {
     mower_msgs::Status status_msg;
     status_msg.stamp = ros::Time::now();
@@ -207,11 +217,13 @@ void publishStatus() {
     status_pub.publish(status_msg);
 }
 
+// 执行定时任务
 void publishActuatorsTimerTask(const ros::TimerEvent &timer_event) {
     publishActuators();
     publishStatus();
 }
 
+// 设置是否开启割草电机
 bool setMowEnabled(mower_msgs::MowerControlSrvRequest &req, mower_msgs::MowerControlSrvResponse &res) {
     if (req.mow_enabled && !is_emergency()) {
         speed_mow = 1;
@@ -222,6 +234,7 @@ bool setMowEnabled(mower_msgs::MowerControlSrvRequest &req, mower_msgs::MowerCon
     return true;
 }
 
+// 是否需要紧急停止
 bool setEmergencyStop(mower_msgs::EmergencyStopSrvRequest &req, mower_msgs::EmergencyStopSrvResponse &res) {
     if (req.emergency) {
         ROS_ERROR_STREAM("Setting emergency!!");
@@ -235,12 +248,15 @@ bool setEmergencyStop(mower_msgs::EmergencyStopSrvRequest &req, mower_msgs::Emer
     return true;
 }
 
+// 接收控制指令
 void velReceived(const geometry_msgs::Twist::ConstPtr &msg) {
     // TODO: update this to rad/s values and implement xESC speed control
     last_cmd_vel = ros::Time::now();
+    // 将机器人速度转换为左右轮的速度
     speed_l = msg->linear.x - 0.5*WHEEL_DISTANCE_M*msg->angular.z;
     speed_r = msg->linear.x + 0.5*WHEEL_DISTANCE_M*msg->angular.z;
 
+    // 将速度限制到1.0
     if (speed_l >= 1.0) {
         speed_l = 1.0;
     } else if (speed_l <= -1.0) {
@@ -253,11 +269,13 @@ void velReceived(const geometry_msgs::Twist::ConstPtr &msg) {
     }
 }
 
+// 处理ui界面传来的消息
 void handleLowLevelUIEvent(struct ui_command *ui_command) {
     ROS_INFO_STREAM("Got UI button with code:" << ui_command->cmd1);
 
     mower_msgs::HighLevelControlSrv srv;
 
+    // 注意，指出里cmd1的数据
     switch(ui_command->cmd1) {
         case 2:
             // Home
@@ -286,12 +304,15 @@ void handleLowLevelUIEvent(struct ui_command *ui_command) {
 
 }
 
+// 处理机器人低等级状态
 void handleLowLevelStatus(struct ll_status *status) {
     std::unique_lock<std::mutex> lk(ll_status_mutex);
     last_ll_status = *status;
 }
 
+// 发布原始imu数据、处理后的磁力计数据、处理后的imu数据
 void handleLowLevelIMU(struct ll_imu *imu) {
+    // 原始imu数据
     mower_msgs::ImuRaw imu_msg;
     imu_msg.dt = imu->dt_millis;
     imu_msg.ax = imu->acceleration_mss[0];
@@ -304,7 +325,7 @@ void handleLowLevelIMU(struct ll_imu *imu) {
     imu_msg.my = imu->mag_uT[1];
     imu_msg.mz = imu->mag_uT[2];
 
-
+    // 处理后的磁力计数据
     sensor_mag_msg.header.stamp = ros::Time::now();
     sensor_mag_msg.header.seq++;
     sensor_mag_msg.header.frame_id = "base_link";
@@ -312,6 +333,7 @@ void handleLowLevelIMU(struct ll_imu *imu) {
     sensor_mag_msg.magnetic_field.y = imu_msg.my/1000.0;
     sensor_mag_msg.magnetic_field.z = imu_msg.mz/1000.0;
 
+    // 处理后的imu数据
     sensor_imu_msg.header.stamp = ros::Time::now();
     sensor_imu_msg.header.seq++;
     sensor_imu_msg.header.frame_id = "base_link";
@@ -349,166 +371,175 @@ int main(int argc, char **argv) {
     ros::NodeHandle n;
     ros::NodeHandle paramNh("~");
 
+    // 高等级用户控制服务
     highLevelClient = n.serviceClient<mower_msgs::HighLevelControlSrv>(
             "mower_service/high_level_control");
 
+    // 在_comms.launch中传参数
+    // std::string ll_serial_port_name, left_esc_port_name, right_esc_port_name, mow_esc_port_name;
+    // if (!paramNh.getParam("ll_serial_port", ll_serial_port_name)) {
+    //     ROS_ERROR_STREAM("Error getting low level serial port parameter. Quitting.");
+    //     return 1;
+    // }
+    // if (!paramNh.getParam("left_esc_serial_port", left_esc_port_name)) {
+    //     ROS_ERROR_STREAM("Error getting left ESC serial port parameter. Quitting.");
+    //     return 1;
+    // }
+    // if (!paramNh.getParam("right_esc_serial_port", right_esc_port_name)) {
+    //     ROS_ERROR_STREAM("Error getting right ESC serial port parameter. Quitting.");
+    //     return 1;
+    // }
+    // if (!paramNh.getParam("mow_esc_serial_port", mow_esc_port_name)) {
+    //     ROS_ERROR_STREAM("Error getting mow ESC serial port parameter. Quitting.");
+    //     return 1;
+    // }
 
-    std::string ll_serial_port_name, left_esc_port_name, right_esc_port_name, mow_esc_port_name;
-    if (!paramNh.getParam("ll_serial_port", ll_serial_port_name)) {
-        ROS_ERROR_STREAM("Error getting low level serial port parameter. Quitting.");
-        return 1;
-    }
-    if (!paramNh.getParam("left_esc_serial_port", left_esc_port_name)) {
-        ROS_ERROR_STREAM("Error getting left ESC serial port parameter. Quitting.");
-        return 1;
-    }
-    if (!paramNh.getParam("right_esc_serial_port", right_esc_port_name)) {
-        ROS_ERROR_STREAM("Error getting right ESC serial port parameter. Quitting.");
-        return 1;
-    }
-    if (!paramNh.getParam("mow_esc_serial_port", mow_esc_port_name)) {
-        ROS_ERROR_STREAM("Error getting mow ESC serial port parameter. Quitting.");
-        return 1;
-    }
+    // // 占空比
+    // speed_l = speed_r = speed_mow = 0;
 
-    speed_l = speed_r = speed_mow = 0;
+    // // Setup VESC interfaces
+    // mow_vesc_interface = new vesc_driver::VescInterface(mowVescError);
+    // left_vesc_interface = new vesc_driver::VescInterface(leftVescError);
+    // right_vesc_interface = new vesc_driver::VescInterface(rightVescError);
 
+    // // 开启3个线程接收串口消息
+    // mow_vesc_interface->start(mow_esc_port_name);
+    // left_vesc_interface->start(left_esc_port_name);
+    // right_vesc_interface->start(right_esc_port_name);
 
-    // Setup VESC interfaces
-    mow_vesc_interface = new vesc_driver::VescInterface(mowVescError);
-    left_vesc_interface = new vesc_driver::VescInterface(leftVescError);
-    right_vesc_interface = new vesc_driver::VescInterface(rightVescError);
-
-    mow_vesc_interface->start(mow_esc_port_name);
-    left_vesc_interface->start(left_esc_port_name);
-    right_vesc_interface->start(right_esc_port_name);
-
-    status_pub = n.advertise<mower_msgs::Status>("mower/status", 1);
-    mower_imu_pub = n.advertise<mower_msgs::ImuRaw>("mower/imu", 1);
-    sensor_imu_pub = n.advertise<sensor_msgs::Imu>("imu/data_raw", 1);
-    sensor_mag_pub = n.advertise<sensor_msgs::MagneticField>("imu/mag", 1);
-    ros::ServiceServer mow_service = n.advertiseService("mower_service/mow_enabled", setMowEnabled);
-    ros::ServiceServer emergency_service = n.advertiseService("mower_service/emergency", setEmergencyStop);
-    ros::Subscriber cmd_vel_sub = n.subscribe("cmd_vel", 0, velReceived, ros::TransportHints().tcpNoDelay(true));
-    ros::Timer publish_timer = n.createTimer(ros::Duration(0.02), publishActuatorsTimerTask);
+    // status_pub = n.advertise<mower_msgs::Status>("mower/status", 1);
+    // mower_imu_pub = n.advertise<mower_msgs::ImuRaw>("mower/imu", 1);
+    // sensor_imu_pub = n.advertise<sensor_msgs::Imu>("imu/data_raw", 1);
+    // sensor_mag_pub = n.advertise<sensor_msgs::MagneticField>("imu/mag", 1);
+    // // 割草电机服务
+    // ros::ServiceServer mow_service = n.advertiseService("mower_service/mow_enabled", setMowEnabled);
+    // // 紧急停止服务
+    // ros::ServiceServer emergency_service = n.advertiseService("mower_service/emergency", setEmergencyStop);
+    // // 接收控制指令
+    // ros::Subscriber cmd_vel_sub = n.subscribe("cmd_vel", 0, velReceived, ros::TransportHints().tcpNoDelay(true));
+    // // 执行定时任务
+    // ros::Timer publish_timer = n.createTimer(ros::Duration(0.02), publishActuatorsTimerTask);
 
 
-    size_t buflen = 1000;
-    uint8_t buffer[buflen];
-    uint8_t buffer_decoded[buflen];
-    size_t read = 0;
-    // don't change, we need to wait for arduino to boot before actually sending stuff
-    ros::Duration retryDelay(5, 0);
-    ros::AsyncSpinner spinner(1);
-    spinner.start();
-    while (ros::ok()) {
-        if (!serial_port.isOpen()) {
-            ROS_INFO_STREAM("connecting serial interface: " << ll_serial_port_name);
-            allow_send = false;
-            try {
-                serial_port.setPort(ll_serial_port_name);
-                serial_port.setBaudrate(115200);
-                auto to = serial::Timeout::simpleTimeout(100);
-                serial_port.setTimeout(to);
-                serial_port.open();
+    // size_t buflen = 1000;
+    // uint8_t buffer[buflen];
+    // uint8_t buffer_decoded[buflen];
+    // size_t read = 0;
+    // // don't change, we need to wait for arduino to boot before actually sending stuff
+    // ros::Duration retryDelay(5, 0);
+    // ros::AsyncSpinner spinner(1);
+    // spinner.start();
+    // while (ros::ok()) {
+    //     if (!serial_port.isOpen()) {
+    //         ROS_INFO_STREAM("connecting serial interface: " << ll_serial_port_name);
+    //         allow_send = false;
+    //         try {
+    //             serial_port.setPort(ll_serial_port_name);
+    //             serial_port.setBaudrate(115200);
+    //             auto to = serial::Timeout::simpleTimeout(100);
+    //             serial_port.setTimeout(to);
+    //             serial_port.open();
 
-                // wait for controller to boot
-                retryDelay.sleep();
-                // this will only be set if no error was set
+    //             // wait for controller to boot
+    //             retryDelay.sleep();
+    //             // this will only be set if no error was set
 
-                allow_send = true;
-            } catch (std::exception &e) {
-                retryDelay.sleep();
-                ROS_ERROR_STREAM("Error during reconnect.");
-            }
-        }
-        size_t bytes_read = 0;
-        try {
-            bytes_read = serial_port.read(buffer + read, 1);
-        } catch (std::exception &e) {
-            ROS_ERROR_STREAM("Error reading serial_port. Closing Connection.");
-            serial_port.close();
-            retryDelay.sleep();
-        }
-        if (read + bytes_read >= buflen) {
-            read = 0;
-            bytes_read = 0;
-            ROS_ERROR_STREAM("Prevented buffer overflow. There is a problem with the serial comms.");
-        }
-        if (bytes_read) {
-            if (buffer[read] == 0) {
-                // end of packet found
-                size_t data_size = cobs.decode(buffer, read, buffer_decoded);
+    //             allow_send = true;
+    //         } catch (std::exception &e) {
+    //             retryDelay.sleep();
+    //             ROS_ERROR_STREAM("Error during reconnect.");
+    //         }
+    //     }
 
-                // first, check the CRC
-                if (data_size < 3) {
-                    // We don't even have one byte of data
-                    // (type + crc = 3 bytes already)
-                    ROS_INFO_STREAM("Got empty packet from Low Level Board");
-                } else {
-                    // We have at least 1 byte of data, check the CRC
-                    crc.reset();
-                    // We start at the second byte (ignore the type) and process (data_size- byte for type - 2 bytes for CRC) bytes.
-                    crc.process_bytes(buffer_decoded, data_size - 2);
-                    uint16_t checksum = crc.checksum();
-                    uint16_t received_checksum = *(uint16_t *) (buffer_decoded + data_size - 2);
-                    if (checksum == received_checksum) {
-                        // Packet checksum is OK, process it
-                        switch (buffer_decoded[0]) {
-                            case PACKET_ID_LL_STATUS:
-                                if (data_size == sizeof(struct ll_status)) {
-                                    handleLowLevelStatus((struct ll_status *) buffer_decoded);
-                                } else {
-                                    ROS_INFO_STREAM(
-                                            "Low Level Board sent a valid packet with the wrong size. Type was STATUS");
-                                }
-                                break;
-                            case PACKET_ID_LL_IMU:
-                                if (data_size == sizeof(struct ll_imu)) {
-                                    handleLowLevelIMU((struct ll_imu *) buffer_decoded);
-                                } else {
-                                    ROS_INFO_STREAM(
-                                            "Low Level Board sent a valid packet with the wrong size. Type was IMU");
-                                }
-                                break;
-                            case PACKET_ID_LL_UI_EVENT:
-                                if(data_size == sizeof(struct ui_command)) {
-                                    handleLowLevelUIEvent((struct ui_command*) buffer_decoded);
-                                } else {
-                                    ROS_INFO_STREAM(
-                                            "Low Level Board sent a valid packet with the wrong size. Type was UI_EVENT");
-                                }
-                                break;
-                            default:
-                                ROS_INFO_STREAM("Got unknown packet from Low Level Board");
-                                break;
-                        }
-                    } else {
-                        ROS_INFO_STREAM("Got invalid checksum from Low Level Board");
-                    }
+    //     size_t bytes_read = 0;
+    //     try {
+    //         bytes_read = serial_port.read(buffer + read, 1);
+    //     } catch (std::exception &e) {
+    //         ROS_ERROR_STREAM("Error reading serial_port. Closing Connection.");
+    //         serial_port.close();
+    //         retryDelay.sleep();
+    //     }
+    //     if (read + bytes_read >= buflen) {
+    //         read = 0;
+    //         bytes_read = 0;
+    //         ROS_ERROR_STREAM("Prevented buffer overflow. There is a problem with the serial comms.");
+    //     }
+    //     if (bytes_read) {
+    //         if (buffer[read] == 0) {
+    //             // end of packet found
+    //             size_t data_size = cobs.decode(buffer, read, buffer_decoded);
 
-                }
+    //             // first, check the CRC
+    //             if (data_size < 3) {
+    //                 // We don't even have one byte of data
+    //                 // (type + crc = 3 bytes already)
+    //                 ROS_INFO_STREAM("Got empty packet from Low Level Board");
+    //             } else {
+    //                 // We have at least 1 byte of data, check the CRC
+    //                 crc.reset();
+    //                 // We start at the second byte (ignore the type) and process (data_size- byte for type - 2 bytes for CRC) bytes.
+    //                 crc.process_bytes(buffer_decoded, data_size - 2);
+    //                 uint16_t checksum = crc.checksum();
+    //                 uint16_t received_checksum = *(uint16_t *) (buffer_decoded + data_size - 2);
+    //                 if (checksum == received_checksum) {
+    //                     // Packet checksum is OK, process it
+    //                     switch (buffer_decoded[0]) {
+    //                         case PACKET_ID_LL_STATUS:
+    //                             if (data_size == sizeof(struct ll_status)) {
+    //                                 handleLowLevelStatus((struct ll_status *) buffer_decoded);
+    //                             } else {
+    //                                 ROS_INFO_STREAM(
+    //                                         "Low Level Board sent a valid packet with the wrong size. Type was STATUS");
+    //                             }
+    //                             break;
+    //                         case PACKET_ID_LL_IMU:
+    //                             if (data_size == sizeof(struct ll_imu)) {
+    //                                 handleLowLevelIMU((struct ll_imu *) buffer_decoded);
+    //                             } else {
+    //                                 ROS_INFO_STREAM(
+    //                                         "Low Level Board sent a valid packet with the wrong size. Type was IMU");
+    //                             }
+    //                             break;
+    //                         case PACKET_ID_LL_UI_EVENT:
+    //                             if(data_size == sizeof(struct ui_command)) {
+    //                                 handleLowLevelUIEvent((struct ui_command*) buffer_decoded);
+    //                             } else {
+    //                                 ROS_INFO_STREAM(
+    //                                         "Low Level Board sent a valid packet with the wrong size. Type was UI_EVENT");
+    //                             }
+    //                             break;
+    //                         default:
+    //                             ROS_INFO_STREAM("Got unknown packet from Low Level Board");
+    //                             break;
+    //                     }
+    //                 } else {
+    //                     ROS_INFO_STREAM("Got invalid checksum from Low Level Board");
+    //                 }
 
-                read = 0;
-            } else {
-                read += bytes_read;
-            }
-        }
-    }
+    //             }
 
-    spinner.stop();
+    //             read = 0;
+    //         } else {
+    //             read += bytes_read;
+    //         }
+    //     }
+    // }
 
-    mow_vesc_interface->setDutyCycle(0.0);
-    left_vesc_interface->setDutyCycle(0.0);
-    right_vesc_interface->setDutyCycle(0.0);
+    // spinner.stop();
 
-    mow_vesc_interface->stop();
-    left_vesc_interface->stop();
-    right_vesc_interface->stop();
+    // mow_vesc_interface->setDutyCycle(0.0);
+    // left_vesc_interface->setDutyCycle(0.0);
+    // right_vesc_interface->setDutyCycle(0.0);
 
-    delete mow_vesc_interface;
-    delete left_vesc_interface;
-    delete right_vesc_interface;
+    // mow_vesc_interface->stop();
+    // left_vesc_interface->stop();
+    // right_vesc_interface->stop();
+
+    // delete mow_vesc_interface;
+    // delete left_vesc_interface;
+    // delete right_vesc_interface;
+    ROS_INFO("Success launch mower comms node");
+    ros::spin();
 
     return 0;
 }

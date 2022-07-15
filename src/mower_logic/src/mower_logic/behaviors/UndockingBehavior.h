@@ -34,10 +34,12 @@ public:
     static UndockingBehavior INSTANCE;
     static UndockingBehavior RETRY_INSTANCE;
 
+    // 构造函数
     UndockingBehavior(Behavior* nextBehavior);
 private:
-    Behavior* nextBehavior;
-    geometry_msgs::PoseStamped docking_pose_stamped;
+    Behavior* nextBehavior;  // 下一个状态，在构造函数中赋值
+    geometry_msgs::PoseStamped docking_pose_stamped;  // 对接点, 好像没有用上？
+    // 是否需要gps
     bool gpsRequired;
 
     bool waitForGPS();

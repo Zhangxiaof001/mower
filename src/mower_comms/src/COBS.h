@@ -35,6 +35,7 @@ public:
     /// \returns The number of bytes written to the \p encodedBuffer.
     /// \warning The encodedBuffer must have at least getEncodedBufferSize() 
     ///          allocated.
+    // 静态函数
     static size_t encode(const uint8_t* buffer,
                          size_t size,
                          uint8_t* encodedBuffer)
@@ -79,6 +80,7 @@ public:
     /// \param decodedBuffer The target buffer for the decoded bytes.
     /// \returns The number of bytes written to the \p decodedBuffer.
     /// \warning decodedBuffer must have a minimum capacity of size.
+    // 静态函数
     static size_t decode(const uint8_t* encodedBuffer,
                          size_t size,
                          uint8_t* decodedBuffer)
@@ -119,6 +121,7 @@ public:
     /// \brief Get the maximum encoded buffer size for an unencoded buffer size.
     /// \param unencodedBufferSize The size of the buffer to be encoded.
     /// \returns the maximum size of the required encoded buffer.
+    // 静态函数
     static size_t getEncodedBufferSize(size_t unencodedBufferSize)
     {
         return unencodedBufferSize + unencodedBufferSize / 254 + 1;

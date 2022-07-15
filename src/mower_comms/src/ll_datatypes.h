@@ -65,11 +65,12 @@ struct ll_imu {
     // Type of this message. Has to be PACKET_ID_LL_IMU.
     uint8_t type;
     // Time since last message in milliseconds.
+    // 自上一条消息以来的时间
     uint16_t dt_millis;
     // Acceleration[m^s2], Gyro[rad/s] and magnetic field[uT]
-    float acceleration_mss[3];
-    float gyro_rads[3];
-    float mag_uT[3];
+    float acceleration_mss[3];  // 加速度
+    float gyro_rads[3];         // 角速度
+    float mag_uT[3];            // 磁力计
     uint16_t crc;
 } __attribute__((packed));
 #pragma pack(pop)

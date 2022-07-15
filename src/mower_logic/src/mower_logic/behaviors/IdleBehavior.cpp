@@ -28,29 +28,38 @@ extern dynamic_reconfigure::Server<mower_logic::MowerLogicConfig> *reconfigServe
 
 IdleBehavior IdleBehavior::INSTANCE;
 
+// 获取当前状态名
 std::string IdleBehavior::state_name() {
     return "IDLE";
 }
 
 Behavior *IdleBehavior::execute() {
 
-
     ros::Rate r(25);
     while (ros::ok()) {
         stop();
 
-        if (manual_start_mowing ||
-            (last_status.v_battery > last_config.battery_full_voltage && last_status.mow_esc_status.temperature_motor < last_config.motor_cold_temperature &&
-             !last_config.manual_pause_mowing)) {
-            mowingPaused = false;
-            return &UndockingBehavior::INSTANCE;
+        // 退出充电基站？
+        // if (manual_start_mowing ||
+        //     (last_status.v_battery > last_config.battery_full_voltage && last_status.mow_esc_status.temperature_motor < last_config.motor_cold_temperature &&
+        //      !last_config.manual_pause_mowing)) {
+        //     mowingPaused = false;
+        //     return &UndockingBehavior::INSTANCE;
+        // }
+        
+        if (manual_start_mowing) {
+          mowingPaused = false;
+          
+          return &UndockingBehavior::INSTANCE;
         }
 
+        // 开始记录割草区域（边界、障碍物）
         if(start_area_recorder) {
             return &AreaRecordingBehavior::INSTANCE;
         }
 
         r.sleep();
+        // ROS_INFO("loop IdleBehavior");
     }
 
     return nullptr;
@@ -84,10 +93,12 @@ void IdleBehavior::command_home() {
     // We're already idle, don't do anything
 }
 
+// 开始割草，控制退出充电基站
 void IdleBehavior::command_start() {
     manual_start_mowing = true;
 }
 
+// 控制开始记录割草区域
 void IdleBehavior::command_s1() {
     start_area_recorder = true;
 }

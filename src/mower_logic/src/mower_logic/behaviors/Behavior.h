@@ -28,7 +28,7 @@ class Behavior {
 private:
     ros::Time startTime;
 protected:
-    bool paused;
+    bool paused;  // 是否暂停
 
     double time_in_state() {
         return (ros::Time::now() - startTime).toSec();
