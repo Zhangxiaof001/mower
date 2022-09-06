@@ -20,9 +20,12 @@
 #include "Behavior.h"
 #include "UndockingBehavior.h"
 
+#include <ros/ros.h>
+
 #include "slic3r_coverage_planner/PlanPath.h"
 #include "slic3r_coverage_planner/Path.h"
 #include "ftc_local_planner/PlannerGetProgress.h"
+#include "local_planner/LocalPlannerSrv.h"
 
 class MowingBehavior : public Behavior {
 
@@ -36,6 +39,7 @@ private:
     bool mowerEnabled = false;
     std::vector<slic3r_coverage_planner::Path> currentMowingPaths;  // 全覆盖路径
 
+    ros::ServiceClient local_planner_client;
 
 public:
     static MowingBehavior INSTANCE;

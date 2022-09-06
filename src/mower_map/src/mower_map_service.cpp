@@ -405,6 +405,7 @@ void readMapFromFile(const std::string& filename, bool append = false) {
     
     // 地图文件是bag类型，使用ros::bag加载地图
     rosbag::Bag bag;
+    std::cout << "filename : " << filename << std::endl;
     try {
         bag.open(filename);
     } catch (rosbag::BagIOException &e) {
@@ -586,7 +587,7 @@ int main(int argc, char **argv) {
     map_server_viz_array_pub = n.advertise<visualization_msgs::MarkerArray>("mower_map_service/map_viz", 10, true);
 
     // Load the default map file
-    readMapFromFile("map.bag");
+    readMapFromFile("/home/zxf/projects/open_mower_ros/map_test.bag");
 
     buildMap();
 

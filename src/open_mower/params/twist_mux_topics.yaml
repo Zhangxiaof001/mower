@@ -9,10 +9,10 @@ topics:
   -
     name    : navigation
     topic   : nav_vel
-    timeout : 0.5
+    timeout : 5.0
     priority: 10
   -
     name    : logic
     topic   : logic_vel
-    timeout : 0.5
+    timeout : 5.0
     priority: 100

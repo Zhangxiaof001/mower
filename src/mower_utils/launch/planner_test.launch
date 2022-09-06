@@ -3,12 +3,12 @@
  -->
 <launch>
     <node name="rviz" pkg="rviz" type="rviz" args="-d $(find mower_utils)/rviz/planner_test.rviz" required="true" />
-    <node pkg="mower_map" type="mower_map_service" name="mower_map" required="true" />
+    <node pkg="mower_map" type="mower_map_service" name="mower_map" required="true" output="screen"/>
     <node pkg="slic3r_coverage_planner" type="slic3r_coverage_planner" name="slic3r_coverage_planner" required="true" />
     <node pkg="mower_utils" type="planner_test" name="planner_test" required="false" />
 
     <!-- launch static transform : base_link to map -->
-    <node pkg="tf2_ros" type="static_transform_publisher" name="base_link_to_map" args="0 0 0 0 0 0 1 base_link map"/>
+    <node pkg="tf2_ros" type="static_transform_publisher" name="odom_to_map" args="0 0 0 0 0 0 1 odom map"/>
 
     <!-- <node pkg="mower_logic" type="mower_logic" name="mower_logic" required="true" />-->
 </launch>

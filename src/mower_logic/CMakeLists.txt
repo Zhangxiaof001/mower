@@ -13,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   mbf_msgs
   mower_map
   mower_msgs
+  move_base_msgs
   nav_msgs
   roscpp
   slic3r_coverage_planner
@@ -134,6 +135,8 @@ catkin_package(
 ## Your package locations should be listed before other locations
 include_directories(
 # include
+  motion_planning/local_planner/include
+  local_planner/include
   ${catkin_INCLUDE_DIRS}
 )
 
@@ -168,6 +171,7 @@ include_directories(
 # )
 
 add_executable(mower_logic
+        ../motion_planning/local_planner/include/vfh.h
         src/mower_logic/mower_logic.cpp
         src/mower_logic/behaviors/Behavior.h
         src/mower_logic/behaviors/DockingBehavior.h

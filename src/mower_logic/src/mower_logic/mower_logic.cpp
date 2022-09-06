@@ -42,6 +42,10 @@
 #include "behaviors/AreaRecordingBehavior.h"
 #include "mower_msgs/HighLevelControlSrv.h"
 #include "std_msgs/String.h"
+#include <std_msgs/Bool.h>
+#include <tf2_ros/transform_broadcaster.h>
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2_ros/transform_listener.h>
 
 ros::ServiceClient pathClient, mapClient, dockingPointClient, gpsClient, mowClient, emergencyClient, pathProgressClient, setNavPointClient, clearNavPointClient;
 
@@ -54,6 +58,7 @@ actionlib::SimpleActionClient<mbf_msgs::MoveBaseAction> *mbfClient;
 actionlib::SimpleActionClient<mbf_msgs::ExePathAction> *mbfClientExePath;
 
 ros::Publisher cmd_vel_pub;
+ros::Publisher odometry_pub;
 // 保存的逻辑配置参数
 mower_logic::MowerLogicConfig last_config;
 
@@ -63,6 +68,8 @@ ros::Time odom_time(0.0);  // odom时间戳
 nav_msgs::Odometry last_odom;  // odom
 ros::Time status_time(0.0);
 mower_msgs::Status last_status;
+
+bool reach_goal = false;
 
 ros::Time last_good_gps(0.0);
 
@@ -75,10 +82,74 @@ bool mowingPaused = false;
 
 Behavior *currentBehavior = &IdleBehavior::INSTANCE;
 
+void publishOdometry(const nav_msgs::Odometry& msg) {
+    static tf2_ros::TransformBroadcaster transform_broadcaster;
+
+
+    geometry_msgs::TransformStamped odom_trans;
+    ros::Time current_time = ros::Time::now();
+    odom_trans.header.stamp = msg.header.stamp;
+    odom_trans.header.frame_id = "map";
+    odom_trans.child_frame_id = "base_link";
+
+    odom_trans.transform.translation.x = msg.pose.pose.position.x;
+    odom_trans.transform.translation.y = msg.pose.pose.position.y;
+    // TODO: Add logic for 3d odometry
+    odom_trans.transform.translation.z = 0;
+    odom_trans.transform.rotation = msg.pose.pose.orientation;
+
+
+    transform_broadcaster.sendTransform(odom_trans);
+
+    // next, we'll publish the odometry message over ROS
+    nav_msgs::Odometry odom;
+    odom.header.stamp = msg.header.stamp;
+    odom.header.frame_id = "map";
+
+    // set the position
+    odom.pose.pose.position.x = msg.pose.pose.position.x;
+    odom.pose.pose.position.y = msg.pose.pose.position.y;
+    odom.pose.pose.position.z = 0.0;
+
+    odom.pose.pose.orientation = odom_trans.transform.rotation;
+
+    // set the velocity
+    odom.child_frame_id = "base_link";
+    odom.twist.twist.linear.x = msg.twist.twist.linear.x;
+    odom.twist.twist.linear.y = msg.twist.twist.linear.y;
+    odom.twist.twist.angular.z = msg.twist.twist.angular.z;
+
+
+    // odom.pose.covariance = {
+    //         10000.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+    //         0.0, 10000.0, 0.0, 0.0, 0.0, 0.0,
+    //         0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+    //         0.0, 0.0, 0.0, 10000.0, 0.0, 0.0,
+    //         0.0, 0.0, 0.0, 0.0, 10000.0, 0.0,
+    //         0.0, 0.0, 0.0, 0.0, 0.0, 0.00001
+    // };
+
+    odom.pose.covariance = msg.pose.covariance;
+    // odom.twist.covariance = {
+    //         0.000001, 0.0, 0.0, 0.0, 0.0, 0.0,
+    //         0.0, 0.000001, 0.0, 0.0, 0.0, 0.0,
+    //         0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+    //         0.0, 0.0, 0.0, 10000.0, 0.0, 0.0,
+    //         0.0, 0.0, 0.0, 0.0, 10000.0, 0.0,
+    //         0.0, 0.0, 0.0, 0.0, 0.0, 0.000001
+    // };
+    odom.twist.covariance = msg.twist.covariance;
+
+    // publish the message
+    odometry_pub.publish(odom);
+    // ROS_INFO("Sucess publish /mower/odom");
+}
+
 // 接受odom数据
 void odomReceived(const nav_msgs::Odometry::ConstPtr &msg) {
     last_odom = *msg;
     odom_time = ros::Time::now();
+    // publishOdometry(*msg);
 }
 
 void statusReceived(const mower_msgs::Status::ConstPtr &msg) {
@@ -258,6 +329,11 @@ void joyVelReceived(const geometry_msgs::Twist::ConstPtr &joy_vel) {
     }
 }
 
+void ReachGoalReceived(const std_msgs::Bool::ConstPtr &msg) {
+  reach_goal = msg->data;
+}
+
+
 int main(int argc, char **argv) {
     ros::init(argc, argv, "mower_logic");
 
@@ -279,6 +355,8 @@ int main(int argc, char **argv) {
 
     path_pub = n->advertise<nav_msgs::Path>("mower_logic/mowing_path", 100, true);
     current_state_pub = n->advertise<std_msgs::String>("mower_logic/current_state", 100, true);
+    // odometry_pub = n->advertise<nav_msgs::Odometry>("/mower/odom", 100, true);
+    odometry_pub = n->advertise<nav_msgs::Odometry>("mower/odom", 50);
 
     pathClient = n->serviceClient<slic3r_coverage_planner::PlanPath>(
             "slic3r_coverage_planner/plan_path");
@@ -313,6 +391,7 @@ int main(int argc, char **argv) {
     // ros::Subscriber odom_sub = n->subscribe("/mower/odom", 0, odomReceived, ros::TransportHints().tcpNoDelay(true));
     ros::Subscriber odom_sub = n->subscribe("/odom", 0, odomReceived, ros::TransportHints().tcpNoDelay(true));
     ros::Subscriber joy_cmd = n->subscribe("/joy_vel", 0, joyVelReceived, ros::TransportHints().tcpNoDelay(true));
+    ros::Subscriber reach_goal_sub = n->subscribe("/local_planner/reach_goal", 0, ReachGoalReceived, ros::TransportHints().tcpNoDelay(true));
 
     ros::ServiceServer high_level_control_srv = n->advertiseService("mower_service/high_level_control", highLevelCommand);
 

@@ -50,7 +50,7 @@ Behavior *IdleBehavior::execute() {
         if (manual_start_mowing) {
           mowingPaused = false;
           
-          return &UndockingBehavior::INSTANCE;
+          return &MowingBehavior::INSTANCE;
         }
 
         // 开始记录割草区域（边界、障碍物）

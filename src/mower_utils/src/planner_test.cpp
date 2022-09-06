@@ -34,7 +34,7 @@ int main(int argc, char **argv) {
 
     // 调用地图服务，得到地图区域
     mower_map::GetMowingAreaSrv mapSrv;
-    mapSrv.request.index = 2;
+    mapSrv.request.index = 0;
 
     if (!mapClient.call(mapSrv)) {
         ROS_ERROR_STREAM("Error loading mowing area");
