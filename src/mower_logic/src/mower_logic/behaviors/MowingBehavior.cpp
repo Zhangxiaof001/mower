@@ -191,10 +191,8 @@ bool MowingBehavior::execute_mowing_plan() {
         currentMowingPaths.erase(currentMowingPaths.begin());
         continue;
       }
-
       mower_map::ClearNavPointSrv clear_nav_point_srv;
       clearNavPointClient.call(clear_nav_point_srv);
-
       // 调用vfh local planner
       // ros::NodeHandle n;
       // local_planner_srv.request.goal.header.frame_id = "map";

@@ -61,7 +61,7 @@ int main(int argc, char **argv) {
 
       nav_msgs::Path coverage_path;
       for (const auto paths : pathSrv.response.paths) {
-        coverage_path.poses.insert(coverage_path.poses.end(), paths.path.poses.begin(), paths.path.poses.end());
+        // coverage_path.poses.insert(coverage_path.poses.end(), paths.path.poses.begin(), paths.path.poses.end());
       }
       path_pub.publish(coverage_path);
 

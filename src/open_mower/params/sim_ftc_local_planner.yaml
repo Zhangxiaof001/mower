@@ -9,9 +9,9 @@ FTCPlanner:
   kp_lon: 10.0
   max_cmd_vel_ang: 0.55
   max_cmd_vel_speed: 1
-  max_follow_distance: 1.0
+  max_follow_distance: 2.0
   max_goal_angle_error: 2.0
-  max_goal_distance_error: 0.1
+  max_goal_distance_error: 1.1
   restore_defaults: false
   speed_fast: 0.5
   speed_fast_threshold: 0.5
