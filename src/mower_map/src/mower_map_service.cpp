@@ -602,9 +602,9 @@ int main(int argc, char **argv) {
       "mower_map_service/map_viz", 10, true);
 
   // Load the default map file
-  readMapFromFile("/home/lyp/map.bag");
+  // readMapFromFile("/home/lyp/map.bag");
 //   readMapFromFile("/home/lyp/project/mower_ws//src/mower/data/map.bag");
-//   readMapFromFile("/home/lyp/Downloads/record_map.bag");
+  readMapFromFile("/home/lyp/Downloads/record_map.bag");
 
   buildMap();
 

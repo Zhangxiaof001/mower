@@ -18,7 +18,7 @@
 //
 //
 #include "AreaRecordingBehavior.h"
-
+#include "tf2_ros/transform_listener.h"
 extern ros::ServiceClient dockingPointClient;
 extern ros::ServiceClient emergencyClient;
 extern actionlib::SimpleActionClient<mbf_msgs::MoveBaseAction> *mbfClient;
@@ -26,6 +26,7 @@ extern actionlib::SimpleActionClient<mbf_msgs::ExePathAction> *mbfClientExePath;
 extern mower_msgs::Status last_status;
 extern ros::NodeHandle *n;
 
+tf2_ros::Buffer *tf_buffer;//{ ::ros::Duration(1) };
 extern void stop();
 
 extern bool setGPS(bool enabled);
@@ -145,7 +146,8 @@ void AreaRecordingBehavior::enter() {
   finished_all = false;
   set_docking_position = false;
   markers = visualization_msgs::MarkerArray();
-
+  tf_buffer = new tf2_ros::Buffer( ::ros::Duration(1));
+  tf_buffer->setUsingDedicatedThread(true);
   add_mowing_area_client = n->serviceClient<mower_map::AddMowingAreaSrv>(
       "mower_map_service/add_mowing_area");
   set_docking_point_client = n->serviceClient<mower_map::SetDockingPointSrv>(
@@ -186,9 +188,23 @@ bool AreaRecordingBehavior::mower_enabled() {
   return false;
 }
 
-void AreaRecordingBehavior::odom_received(const nav_msgs::Odometry &odom_msg) {
+void AreaRecordingBehavior::odom_received(const nav_msgs::Odometry &odom_msgtest) {
+
+ try{
+  auto map_to_base = tf_buffer->lookupTransform("map", "base_link", ros::Time(),
+                                                ros::Duration(0));
+  nav_msgs::Odometry odom_msg;
+  odom_msg =  odom_msgtest;
+  odom_msg.pose.pose.position.x = map_to_base.transform.translation.x;
+  odom_msg.pose.pose.position.y = map_to_base.transform.translation.y;
+  odom_msg.pose.pose.position.z = map_to_base.transform.translation.z;
+  odom_msg.pose.pose.orientation=  map_to_base.transform.rotation;
   last_odom = odom_msg;
-  has_odom = true;
+ }catch(...){
+
+ } 
+
+  // has_odom = true;
 }
 void AreaRecordingBehavior::joy_received(const sensor_msgs::Joy &joy_msg) {
   if (press_start_) {
