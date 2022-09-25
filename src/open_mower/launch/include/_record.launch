@@ -1,0 +1,21 @@
+<!--
+    Include this file to record all low level comms, so you can playback later on for debugging
+ -->
+<launch>
+    <arg name="prefix" default="record"/>
+
+    <node if="$(optenv OM_ENABLE_RECORDING False)" pkg="rosbag" type="record" name="rosbag_record_diag"
+          args="record -o /home/ubuntu/$(arg prefix)
+/clock
+/time_reference
+/tf
+/tf_static
+/joy
+/cmd_vel
+/mower/status
+/mower/imu
+/imu/data_raw
+/imu/mag
+/ublox/navrelposned
+/ublox/fix " />
+</launch>

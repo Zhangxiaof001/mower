@@ -1,0 +1,6 @@
+<launch>
+    <node name="joy_node" pkg="joy" type="joy_node" output="screen" respawn="false"/>
+    
+    <node name="joy_control" pkg="joy_ctrl" type="joy_control" output="screen"/>
+</launch>
+
