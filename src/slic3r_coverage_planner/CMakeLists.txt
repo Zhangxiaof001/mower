@@ -22,7 +22,7 @@ ExternalProject_Add(
         ${EP_SLIC3R}
 
         PREFIX ${EP_SLIC3R}
-        SOURCE_DIR /home/zxf/projects/mower/src/slic3r_coverage_planner/Slic3r/
+        SOURCE_DIR    ${PROJECT_SOURCE_DIR}/Slic3r/
         # GIT_REPOSITORY https://github.com/slic3r/Slic3r
         # GIT_TAG b1a5500f427700ac3dffc0e7d9535ea65f993537
         # GIT_SHALLOW ON

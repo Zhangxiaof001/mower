@@ -21,15 +21,14 @@ find_package(catkin REQUIRED COMPONENTS
   tf2_geometry_msgs
   tf2_ros
         sensor_msgs
-        robot_localization
   tf
 )
 
 
 
 # Geographiclib installs FindGeographicLib.cmake to this non-standard location
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "/usr/share/cmake/geographiclib/")
-find_package(GeographicLib REQUIRED)
+#set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "/usr/share/cmake/geographiclib/")
+#find_package(GeographicLib REQUIRED)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -125,7 +124,7 @@ catkin_package(
 #  LIBRARIES mower_logic
 #  CATKIN_DEPENDS dynamic_reconfigure ftc_local_planner mbf_msgs mower_map mower_msgs nav_msgs roscpp slic3r_coverage_planner tf2 tf2_geometry_msgs tf2_ros
 #  DEPENDS system_lib
-        DEPENDS GeographicLib
+#DEPENDS GeographicLib
 )
 
 ###########
@@ -189,17 +188,17 @@ add_executable(mower_logic
 add_dependencies(mower_logic ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})
 target_link_libraries(mower_logic ${catkin_LIBRARIES})
 
-add_executable(mower_odometry src/mower_odometry/mower_odometry.cpp)
-add_dependencies(mower_odometry ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})
-target_link_libraries(mower_odometry ${catkin_LIBRARIES} ${GeographicLib_LIBRARIES})
+#add_executable(mower_odometry src/mower_odometry/mower_odometry.cpp)
+#add_dependencies(mower_odometry ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})
+#target_link_libraries(mower_odometry ${catkin_LIBRARIES} ${GeographicLib_LIBRARIES})
 
-add_executable(pub_odometry src/mower_odometry/pub_odometry.cpp)
-add_dependencies(pub_odometry ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})
-target_link_libraries(pub_odometry ${catkin_LIBRARIES} ${GeographicLib_LIBRARIES})
+#add_executable(pub_odometry src/mower_odometry/pub_odometry.cpp)
+#add_dependencies(pub_odometry ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})
+#target_link_libraries(pub_odometry ${catkin_LIBRARIES} ${GeographicLib_LIBRARIES})
 
-add_executable(mag_calibration src/mag_calibration/mag_calibration.cpp)
-add_dependencies(mag_calibration ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})
-target_link_libraries(mag_calibration ${catkin_LIBRARIES} ${GeographicLib_LIBRARIES})
+#add_executable(mag_calibration src/mag_calibration/mag_calibration.cpp)
+#add_dependencies(mag_calibration ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})
+#target_link_libraries(mag_calibration ${catkin_LIBRARIES} ${GeographicLib_LIBRARIES})
 
 
 #############

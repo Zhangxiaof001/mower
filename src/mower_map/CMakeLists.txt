@@ -18,7 +18,7 @@ find_package(catkin REQUIRED
         grid_map_core
         grid_map_ros
         grid_map_filters
-        grid_map_cv
+	grid_map_cv
         rosbag
         )
 
