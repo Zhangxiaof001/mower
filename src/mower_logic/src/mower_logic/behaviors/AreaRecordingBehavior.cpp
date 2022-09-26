@@ -159,7 +159,7 @@ void AreaRecordingBehavior::enter() {
     ROS_INFO_STREAM("Subscribing to /joy for user input");
     joy_sub = n->subscribe("/joy", 100,
                                           &AreaRecordingBehavior::joy_received, this);
-    odom_sub = n->subscribe("/odom", 100,
+    odom_sub = n->subscribe("/mower/odom", 100,
                                            &AreaRecordingBehavior::odom_received, this);
 
 }
@@ -325,7 +325,7 @@ bool AreaRecordingBehavior::recordNewPolygon(geometry_msgs::Polygon &polygon) {
             } else {
                 success = false;
             }
-            ROS_INFO_STREAM("Finished Recording polygon");
+            ROS_INFO("Finished Recording polygon");
             break;
         }
     }  // end while
@@ -340,14 +340,14 @@ bool AreaRecordingBehavior::getDockingPosition(geometry_msgs::Pose &pos) {
     if(!has_first_docking_pos) {
         // 记录第一个对接点的位姿
         ROS_INFO_STREAM("Recording first docking position");
-        auto odom_ptr = ros::topic::waitForMessage<nav_msgs::Odometry>("/odom", ros::Duration(1, 0));
+        auto odom_ptr = ros::topic::waitForMessage<nav_msgs::Odometry>("/mower/odom", ros::Duration(1, 0));
 
         first_docking_pos = odom_ptr->pose.pose;
         has_first_docking_pos = true;
         return false;
     } else {
         ROS_INFO_STREAM("Recording second docking position");
-        auto odom_ptr = ros::topic::waitForMessage<nav_msgs::Odometry>("/odom", ros::Duration(1, 0));
+        auto odom_ptr = ros::topic::waitForMessage<nav_msgs::Odometry>("/mower/odom", ros::Duration(1, 0));
 
         pos.position = odom_ptr->pose.pose.position;
 

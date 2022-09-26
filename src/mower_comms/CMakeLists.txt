@@ -9,10 +9,8 @@ project(mower_comms)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   mower_msgs
-        sensor_msgs
+  sensor_msgs
   roscpp
-  serial
-        vesc_driver
 )
 
 find_package(
@@ -158,8 +156,6 @@ include_directories(
 
 add_executable(mower_comms
         src/mower_comms.cpp
-        src/COBS.h
-        src/ll_datatypes.h
         )
 
 add_dependencies(mower_comms ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})

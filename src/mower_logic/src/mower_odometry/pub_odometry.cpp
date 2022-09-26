@@ -12,13 +12,13 @@ int main(int argc, char** argv) {
   ros::Rate rate(100);
   ros::Publisher odom_pub = node.advertise<nav_msgs::Odometry>("/mower/odom", 100);
 
-  listener.waitForTransform("/odom", "/base_link", ros::Time(0),
+  listener.waitForTransform("/map", "/base_link", ros::Time(0),
                             ros::Duration(10.0));
 
   while (ros::ok()) {
     tf::StampedTransform transform;
     try {
-      listener.lookupTransform("/odom", "/base_link", ros::Time(0),
+      listener.lookupTransform("/map", "/base_link", ros::Time(0),
                                transform);
       double x = transform.getOrigin().x();
       double y = transform.getOrigin().y();

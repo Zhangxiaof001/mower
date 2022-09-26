@@ -91,78 +91,32 @@ Visualization Manager:
           Value: false
         base_link:
           Value: true
-        bumper_link:
-          Value: false
-        camera_depth_frame:
-          Value: false
-        camera_depth_optical_frame:
-          Value: false
+        camera_accel_frame:
+          Value: true
+        camera_accel_optical_frame:
+          Value: true
+        camera_color_frame:
+          Value: true
+        camera_color_optical_frame:
+          Value: true
+        camera_gyro_frame:
+          Value: true
+        camera_imu_optical_frame:
+          Value: true
         camera_link:
           Value: false
-        camera_rgb_frame:
-          Value: false
-        camera_rgb_optical_frame:
-          Value: false
-        caster_back_link:
-          Value: false
-        caster_front_link:
-          Value: false
-        cliff_sensor_front_link:
-          Value: false
-        cliff_sensor_left_link:
-          Value: false
-        cliff_sensor_right_link:
-          Value: false
-        gyro_link:
-          Value: false
-        hokuyo_link:
-          Value: false
+        front_left_wheel_link:
+          Value: true
+        front_right_wheel_link:
+          Value: true
+        inertial_link:
+          Value: true
         map:
           Value: true
-        odom:
+        rear_left_wheel_link:
           Value: true
-        plate_bottom_link:
-          Value: false
-        plate_middle_link:
-          Value: false
-        plate_top_link:
-          Value: false
-        pole_bottom_0_link:
-          Value: false
-        pole_bottom_1_link:
-          Value: false
-        pole_bottom_2_link:
-          Value: false
-        pole_bottom_3_link:
-          Value: false
-        pole_bottom_4_link:
-          Value: false
-        pole_bottom_5_link:
-          Value: false
-        pole_kinect_0_link:
-          Value: false
-        pole_kinect_1_link:
-          Value: false
-        pole_middle_0_link:
-          Value: false
-        pole_middle_1_link:
-          Value: false
-        pole_middle_2_link:
-          Value: false
-        pole_middle_3_link:
-          Value: false
-        pole_top_0_link:
-          Value: false
-        pole_top_1_link:
-          Value: false
-        pole_top_2_link:
-          Value: false
-        pole_top_3_link:
-          Value: false
-        wheel_left_link:
-          Value: false
-        wheel_right_link:
-          Value: false
+        rear_right_wheel_link:
+          Value: true
       Marker Alpha: 1
       Marker Scale: 1
       Name: TF
@@ -170,76 +124,12 @@ Visualization Manager:
       Show Axes: true
       Show Names: true
       Tree:
-        odom:
+        map:
           base_link:
-            bumper_link:
+            base_footprint:
               {}
-            camera_rgb_frame:
-              camera_depth_frame:
-                camera_depth_optical_frame:
-                  {}
-              camera_link:
-                {}
-              camera_rgb_optical_frame:
-                {}
-            caster_back_link:
+            inertial_link:
               {}
-            caster_front_link:
-              {}
-            cliff_sensor_front_link:
-              {}
-            cliff_sensor_left_link:
-              {}
-            cliff_sensor_right_link:
-              {}
-            gyro_link:
-              {}
-            hokuyo_link:
-              {}
-            plate_bottom_link:
-              {}
-            plate_middle_link:
-              {}
-            plate_top_link:
-              {}
-            pole_bottom_0_link:
-              {}
-            pole_bottom_1_link:
-              {}
-            pole_bottom_2_link:
-              {}
-            pole_bottom_3_link:
-              {}
-            pole_bottom_4_link:
-              {}
-            pole_bottom_5_link:
-              {}
-            pole_kinect_0_link:
-              {}
-            pole_kinect_1_link:
-              {}
-            pole_middle_0_link:
-              {}
-            pole_middle_1_link:
-              {}
-            pole_middle_2_link:
-              {}
-            pole_middle_3_link:
-              {}
-            pole_top_0_link:
-              {}
-            pole_top_1_link:
-              {}
-            pole_top_2_link:
-              {}
-            pole_top_3_link:
-              {}
-            wheel_left_link:
-              {}
-            wheel_right_link:
-              {}
-          map:
-            {}
       Update Interval: 0
       Value: true
     - Alpha: 1
@@ -355,13 +245,13 @@ Visualization Manager:
       Unreliable: false
       Value: true
     - Class: rviz/MarkerArray
-      Enabled: false
+      Enabled: true
       Marker Topic: /slic3r_coverage_planner/path_marker_array
       Name: MarkerArray
       Namespaces:
-        {}
+        mower_map_service_lines: true
       Queue Size: 100
-      Value: false
+      Value: true
     - Alpha: 1
       Buffer Length: 1
       Class: rviz/Path
@@ -445,6 +335,54 @@ Visualization Manager:
       Topic: /odom
       Unreliable: false
       Value: false
+    - Alpha: 1
+      Buffer Length: 1
+      Class: rviz/Path
+      Color: 25; 255; 0
+      Enabled: true
+      Head Diameter: 0.30000001192092896
+      Head Length: 0.20000000298023224
+      Length: 0.30000001192092896
+      Line Style: Lines
+      Line Width: 0.029999999329447746
+      Name: Path
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0
+      Pose Color: 255; 85; 255
+      Pose Style: None
+      Queue Size: 10
+      Radius: 0.029999999329447746
+      Shaft Diameter: 0.10000000149011612
+      Shaft Length: 0.10000000149011612
+      Topic: /pose_path
+      Unreliable: false
+      Value: true
+    - Alpha: 1
+      Buffer Length: 1
+      Class: rviz/Path
+      Color: 25; 255; 0
+      Enabled: true
+      Head Diameter: 0.30000001192092896
+      Head Length: 0.20000000298023224
+      Length: 0.30000001192092896
+      Line Style: Lines
+      Line Width: 0.029999999329447746
+      Name: Path
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0
+      Pose Color: 255; 85; 255
+      Pose Style: None
+      Queue Size: 10
+      Radius: 0.029999999329447746
+      Shaft Diameter: 0.10000000149011612
+      Shaft Length: 0.10000000149011612
+      Topic: /rtk_path
+      Unreliable: false
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -473,7 +411,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 0.5857692360877991
+      Distance: 20.803836822509766
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -489,9 +427,9 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.5697963237762451
+      Pitch: 1.4697964191436768
       Target Frame: <Fixed Frame>
-      Yaw: 1.6672210693359375
+      Yaw: 1.7022210359573364
     Saved: ~
 Window Geometry:
   Displays:

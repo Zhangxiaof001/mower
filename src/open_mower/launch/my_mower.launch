@@ -2,7 +2,7 @@
     <!-- localization : use ground turth in simulation -->
 
     <!-- launch static transform : base_link to map -->
-    <node pkg="tf" type="static_transform_publisher" name="odom_to_map" args="0 0 0 0 0 0 1 odom map 100"/>  
+    <!-- <node pkg="tf" type="static_transform_publisher" name="odom_to_map" args="0 0 0 0 0 0 1 odom map 100"/>   -->
 
     <!-- launch mower_service/high_level_control -->
     <node pkg="mower_comms" type="mower_comms" name="mower_comms" output="screen"/>
@@ -25,7 +25,7 @@
     <include file="$(find mower_logic)/launch/mower_logic.launch"/>
 
     <!-- joy control -->
-    <include file="$(find joy_ctrl)/launch/joy_control.launch"/>
+    <!-- <include file="$(find joy_ctrl)/launch/joy_control.launch"/> -->
 
     <!-- <node pkg="twist_mux" type="twist_mux" name="twist_mux" output="screen">
         <remap from="cmd_vel_out" to="/cmd_vel"/>
