@@ -1,0 +1,69 @@
+%module{Slic3r::XS};
+
+%{
+#include <xsinit.h>
+#include "clipper.hpp"
+#include "libslic3r/ClipperUtils.hpp"
+%}
+
+%package{Slic3r::Geometry::Clipper};
+
+Polygons offset(Polygons polygons, float delta, double scale = CLIPPER_OFFSET_SCALE,
+    ClipperLib::JoinType joinType = ClipperLib::jtMiter, double miterLimit = 3);
+
+ExPolygons offset_ex(Polygons polygons, float delta, double scale = CLIPPER_OFFSET_SCALE,
+    ClipperLib::JoinType joinType = ClipperLib::jtMiter, double miterLimit = 3);
+
+Polygons offset2(Polygons polygons, float delta1, float delta2, double scale = CLIPPER_OFFSET_SCALE,
+    ClipperLib::JoinType joinType = ClipperLib::jtMiter, double miterLimit = 3);
+
+ExPolygons offset2_ex(Polygons polygons, float delta1, float delta2, double scale = CLIPPER_OFFSET_SCALE,
+    ClipperLib::JoinType joinType = ClipperLib::jtMiter, double miterLimit = 3);
+
+Polygons diff(Polygons subject, Polygons clip, bool safety_offset = false);
+
+ExPolygons diff_ex(Polygons subject, Polygons clip, bool safety_offset = false);
+
+Polylines diff_pl(Polylines subject, Polygons clip);
+
+Polygons intersection(Polygons subject, Polygons clip, bool safety_offset = false);
+
+ExPolygons intersection_ex(Polygons subject, Polygons clip, bool safety_offset = false);
+
+Polylines intersection_pl(Polylines subject, Polygons clip);
+
+%name{intersection_ppl} Polylines intersection_pl(Polygons subject, Polygons clip);
+
+%name{union} Polygons union_(Polygons subject, bool safety_offset = false);
+
+ExPolygons union_ex(Polygons subject, bool safety_offset = false);
+
+Polygons union_pt_chained(Polygons subject, bool safety_offset = false);
+
+Polygons simplify_polygons(Polygons subject);
+
+%{
+
+IV
+_constant()
+  ALIAS:
+    JT_MITER        = jtMiter
+    JT_ROUND        = jtRound
+    JT_SQUARE       = jtSquare
+    CLIPPER_OFFSET_SCALE = CLIPPER_OFFSET_SCALE
+  CODE:
+    RETVAL = ix;
+  OUTPUT: RETVAL
+
+SV*
+union_pt(subject, safety_offset = false)
+    Polygons                    subject
+    bool                        safety_offset
+    CODE:
+        // perform operation
+        ClipperLib::PolyTree polytree = union_pt(subject, safety_offset);
+        RETVAL = polynode_children_2_perl(polytree);
+    OUTPUT:
+        RETVAL
+
+%}

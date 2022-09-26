@@ -1,0 +1,76 @@
+%module{Slic3r::XS};
+
+%{
+#include <xsinit.h>
+#include "libslic3r/ExtrusionEntity.hpp"
+%}
+
+%name{Slic3r::ExtrusionLoop} class ExtrusionLoop {
+    ExtrusionLoop();
+    ~ExtrusionLoop();
+    Clone<ExtrusionLoop> clone()
+        %code{% RETVAL = THIS; %};
+    void reverse();
+    bool make_clockwise();
+    bool make_counter_clockwise();
+    Clone<Point> first_point();
+    Clone<Point> last_point();
+    Clone<Polygon> polygon();
+    void append(ExtrusionPath* path)
+        %code{% THIS->paths.push_back(*path); %};
+    double length();
+    bool split_at_vertex(Point* point)
+        %code{% RETVAL = THIS->split_at_vertex(*point); %};
+    void split_at(Point* point, int prefer_non_overhang = 0)
+        %code{% THIS->split_at(*point, prefer_non_overhang != 0); %};
+    ExtrusionPaths clip_end(double distance)
+        %code{% THIS->clip_end(distance, &RETVAL); %};
+    bool has_overhang_point(Point* point)
+        %code{% RETVAL = THIS->has_overhang_point(*point); %};
+    bool is_perimeter();
+    bool is_infill();
+    bool is_solid_infill();
+    Polygons grow();
+    Clone<Polyline> as_polyline();
+%{
+
+SV*
+ExtrusionLoop::arrayref()
+    CODE:
+        AV* av = newAV();
+        if (!THIS->paths.empty()) av_extend(av, THIS->paths.size()-1);
+        for (ExtrusionPaths::iterator it = THIS->paths.begin(); it != THIS->paths.end(); ++it) {
+            av_store(av, it - THIS->paths.begin(), perl_to_SV_ref(*it));
+        }
+        RETVAL = newRV_noinc((SV*)av);
+    OUTPUT:
+        RETVAL
+
+ExtrusionLoopRole
+ExtrusionLoop::role(...)
+    CODE:
+        if (items > 1) {
+            THIS->role = (ExtrusionLoopRole)SvUV(ST(1));
+        }
+        RETVAL = THIS->role;
+    OUTPUT:
+        RETVAL
+
+%}
+};
+
+%package{Slic3r::ExtrusionLoop};
+%{
+
+IV
+_constant()
+  ALIAS:
+    EXTRL_ROLE_DEFAULT                      = elrDefault
+    EXTRL_ROLE_CONTOUR_INTERNAL_PERIMETER   = elrContourInternalPerimeter
+    EXTRL_ROLE_SKIRT                        = elrSkirt
+  PROTOTYPE:
+  CODE:
+    RETVAL = ix;
+  OUTPUT: RETVAL
+
+%}

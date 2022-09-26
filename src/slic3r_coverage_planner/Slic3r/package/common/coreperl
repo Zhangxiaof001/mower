@@ -1,0 +1,24 @@
+# Core perl modules used in Slic3r
+attributes
+base
+bytes
+B
+POSIX
+FindBin 
+Getopt::Long
+Unicode::Normalize 
+Tie::Handle
+Time::HiRes
+Time::Local 
+Thread::Semaphore
+Math::Trig 
+IO::Socket 
+Errno
+Storable 
+lib 
+overload
+warnings 
+local::lib
+strict 
+utf8 
+parent
