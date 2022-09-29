@@ -603,8 +603,9 @@ int main(int argc, char **argv) {
 
   // Load the default map file
   // readMapFromFile("/home/lyp/map.bag");
-//   readMapFromFile("/home/lyp/project/mower_ws//src/mower/data/map.bag");
-  readMapFromFile("/home/lyp/Downloads/record_map.bag");
+  // readMapFromFile("/home/lyp/project/mower_ws//src/mower/data/map.bag");
+  readMapFromFile("/home/lyp/record_map.bag");
+  // readMapFromFile("/home/lyp/Downloads/map_test.bag");
 
   buildMap();
 
