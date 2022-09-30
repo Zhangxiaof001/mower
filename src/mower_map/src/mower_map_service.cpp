@@ -69,6 +69,7 @@ geometry_msgs::Pose fake_obstacle_pose;
 
 // The grid map. This is built from the polygons loaded from the file.
 grid_map::GridMap map;
+std::string map_path;
 
 
 /**
@@ -374,7 +375,7 @@ void buildMap() {
  */
 void saveMapToFile() {
     rosbag::Bag bag;
-    bag.open("/home/zxf/projects/open_mower_ros/record_map.bag", rosbag::bagmode::Write);
+    bag.open(map_path, rosbag::bagmode::Write);
 
     for (auto &area: mowing_areas) {
         bag.write("mowing_areas", ros::Time::now(), area);
@@ -387,7 +388,7 @@ void saveMapToFile() {
 
     bag.close();
 
-    ROS_INFO("Success save map to map.bag file");
+    ROS_INFO("Success save map to ", map_path);
 }
 
 /**
@@ -405,7 +406,6 @@ void readMapFromFile(const std::string& filename, bool append = false) {
     
     // 地图文件是bag类型，使用ros::bag加载地图
     rosbag::Bag bag;
-    std::cout << "filename : " << filename << std::endl;
     try {
         bag.open(filename);
     } catch (rosbag::BagIOException &e) {
@@ -579,14 +579,21 @@ int main(int argc, char **argv) {
     ros::init(argc, argv, "mower_map_service");
 
     ros::NodeHandle n;
+    ros::NodeHandle nh("~");
     // 发布栅格地图
     map_pub = n.advertise<nav_msgs::OccupancyGrid>("mower_map_service/map", 10, true);
     map_areas_pub = n.advertise<mower_map::MapAreas>("mower_map_service/map_areas", 10, true);
     // 地图可视化
     map_server_viz_array_pub = n.advertise<visualization_msgs::MarkerArray>("mower_map_service/map_viz", 10, true);
 
+    if (!nh.getParam("map_path", map_path)) {
+      ROS_ERROR("No map path parameter");
+      return 1;
+    }
+    
+    ROS_INFO("map_path : ", map_path);
     // Load the default map file
-    readMapFromFile("/home/zxf/projects/mower/data/map_test.bag");
+    readMapFromFile(map_path);
 
     buildMap();
 
