@@ -586,7 +586,7 @@ int main(int argc, char **argv) {
     map_server_viz_array_pub = n.advertise<visualization_msgs::MarkerArray>("mower_map_service/map_viz", 10, true);
 
     // Load the default map file
-    readMapFromFile("/home/zxf/projects/open_mower_ros/record_map.bag");
+    readMapFromFile("/home/zxf/projects/mower/data/map_test.bag");
 
     buildMap();
 

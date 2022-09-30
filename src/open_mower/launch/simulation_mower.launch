@@ -1,0 +1,32 @@
+<launch>
+    <!-- launch gazebo simulation -->
+    <!-- localization : use ground turth in simulation -->
+    <include file="$(find mbot_gazebo)/launch/navi_gazebo.launch"/>
+
+    <!-- launch static transform : base_link to map -->
+    <node pkg="tf" type="static_transform_publisher" name="odom_to_map" args="0 0 0 0 0 0 1 odom map 100"/>  
+
+    <!-- launch mower_service/high_level_control -->
+    <node pkg="mower_comms" type="mower_comms" name="mower_comms" output="screen"/>
+
+    <!-- map -->
+    <node pkg="mower_map" type="mower_map_service" name="map_service" output="screen"/>
+
+    <!-- coverage path planning -->
+    <node pkg="slic3r_coverage_planner" type="slic3r_coverage_planner" name="slic3r_coverage_planner" output="screen"/>
+
+    <!-- navigation move_base -->
+    <include file="$(find open_mower)/launch/include/_move_base.launch"/>
+    
+    <!-- record : record map to bag file -->
+    <include file="$(find open_mower)/launch/include/_record.launch">
+        <arg name="prefix" value="mow_area"/>
+    </include>
+
+    <!-- main logic -->
+    <include file="$(find mower_logic)/launch/mower_logic.launch"/>
+
+    <!-- joy control -->
+    <!-- <include file="$(find joy_ctrl)/launch/joy_control.launch"/> -->
+
+</launch>
