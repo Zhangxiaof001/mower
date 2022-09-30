@@ -192,9 +192,9 @@ target_link_libraries(mower_logic ${catkin_LIBRARIES})
 #add_dependencies(mower_odometry ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})
 #target_link_libraries(mower_odometry ${catkin_LIBRARIES} ${GeographicLib_LIBRARIES})
 
-#add_executable(pub_odometry src/mower_odometry/pub_odometry.cpp)
-#add_dependencies(pub_odometry ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})
-#target_link_libraries(pub_odometry ${catkin_LIBRARIES} ${GeographicLib_LIBRARIES})
+add_executable(pub_odometry src/mower_odometry/pub_odometry.cpp)
+add_dependencies(pub_odometry ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})
+target_link_libraries(pub_odometry ${catkin_LIBRARIES} ${GeographicLib_LIBRARIES})
 
 #add_executable(mag_calibration src/mag_calibration/mag_calibration.cpp)
 #add_dependencies(mag_calibration ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})
