@@ -1,3 +1,8 @@
 [submodule "src/lp_robot"]
 	path = src/lp_robot
 	url = https://github.com/lyp727460067/lp_robot
+	branch = ruichi
+[submodule "src/mower_location"]
+	path = src/mower_location
+	url = https://github.com/lyp727460067/mower_location
+	branch = neptune
