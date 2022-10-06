@@ -5,7 +5,7 @@
     <node pkg="mower_comms" type="mower_comms" name="mower_comms" output="screen"/>
 
     <!-- map -->
-    <node pkg="mower_map" type="mower_map_service" name="map_service" output="screen"/>
+    <include file="$(find mower_map)/launch/map_service.launch"/>
 
     <!-- coverage path planning -->
     <node pkg="slic3r_coverage_planner" type="slic3r_coverage_planner" name="slic3r_coverage_planner" output="screen"/>
