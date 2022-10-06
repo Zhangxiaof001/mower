@@ -1,0 +1,3 @@
+[submodule "src/lp_robot"]
+	path = src/lp_robot
+	url = https://github.com/lyp727460067/lp_robot

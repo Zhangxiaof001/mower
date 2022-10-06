@@ -4,7 +4,7 @@ project(mower_map)
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
 
-find_package(OpenCV REQUIRED)
+find_package(OpenCV REQUIRED COMPONENTS core imgproc  )
 include_directories(${OpenCV_INCLUDE_DIRS})
 
 ## Find catkin macros and libraries
@@ -22,6 +22,7 @@ find_package(catkin REQUIRED
         rosbag
         )
 
+find_package(Glog REQUIRED)
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 
@@ -170,6 +171,7 @@ include_directories(
 add_executable(mower_map_service src/mower_map_service.cpp)
 add_dependencies(mower_map_service ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})
 target_link_libraries(mower_map_service ${catkin_LIBRARIES} ${OpenCV_LIBS})
+
 
 #############
 ## Install ##
