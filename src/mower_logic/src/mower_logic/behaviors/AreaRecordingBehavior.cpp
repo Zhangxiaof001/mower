@@ -163,6 +163,7 @@ void AreaRecordingBehavior::enter() {
       n->subscribe("/joy", 100, &AreaRecordingBehavior::joy_received, this);
   odom_sub = n->subscribe("/mower/odom", 100,
                           &AreaRecordingBehavior::odom_received, this);
+  last_joy.buttons = std::vector<int>(8,0);
 }
 
 void AreaRecordingBehavior::exit() {
@@ -191,6 +192,7 @@ void AreaRecordingBehavior::odom_received(const nav_msgs::Odometry &odom_msg) {
   has_odom = true;
 }
 void AreaRecordingBehavior::joy_received(const sensor_msgs::Joy &joy_msg) {
+  press_start_ = true;
   if (press_start_) {
     if (joy_msg.buttons[1] && !last_joy.buttons[1]) {
       // B was pressed. We toggle recording state
