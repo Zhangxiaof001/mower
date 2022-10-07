@@ -229,11 +229,7 @@ void stop() {
   stop.linear.x = 0;
   cmd_vel_pub.publish(stop);
 
-<<<<<<< HEAD
-    // setMowerEnabled(false);
-=======
   setMowerEnabled(false);
->>>>>>> test
 
   // to be sure, call it again.
   // mower_msgs::MowerControlSrv mow_srv;
@@ -432,16 +428,6 @@ int main(int argc, char **argv) {
   ros::AsyncSpinner asyncSpinner(1);
   asyncSpinner.start();
 
-  // ROS_INFO("Waiting for a status message");
-  // while (status_time == ros::Time(0.0)) {
-  //     if (!ros::ok()) {
-  //         delete (reconfigServer);
-  //         delete (mbfClient);
-  //         delete (mbfClientExePath);
-  //         return 1;
-  //     }
-  // }
-
   ROS_INFO("Waiting for a odometry message");
   while (odom_time == ros::Time(0.0)) {
     if (!ros::ok()) {
@@ -451,101 +437,6 @@ int main(int argc, char **argv) {
       return 1;
     }
   }
-}
-
-  // ROS_INFO("Waiting for emergency service");
-  // if (!emergencyClient.waitForExistence(ros::Duration(60.0, 0.0))) {
-  //     ROS_ERROR("Emergency server not found.");
-  //     delete (reconfigServer);
-  //     delete (mbfClient);
-  //     delete (mbfClientExePath);
-
-  //     return 1;
-  // }
-
-  // ROS_INFO("Waiting for path server");
-  // if (!pathClient.waitForExistence(ros::Duration(60.0, 0.0))) {
-  //     ROS_ERROR("Path service not found.");
-  //     delete (reconfigServer);
-  //     delete (mbfClient);
-  //     delete (mbfClientExePath);
-
-  //     return 1;
-  // }
-
-  // ROS_INFO("Waiting for gps service");
-  // if (!gpsClient.waitForExistence(ros::Duration(60.0, 0.0))) {
-  //     ROS_ERROR("GPS service not found.");
-  //     delete (reconfigServer);
-  //     delete (mbfClient);
-  //     delete (mbfClientExePath);
-
-  //     return 1;
-  // }
-
-  // ROS_INFO("Waiting for mower service");
-  // if (!mowClient.waitForExistence(ros::Duration(60.0, 0.0))) {
-  //     ROS_ERROR("Mower service not found.");
-  //     delete (reconfigServer);
-  //     delete (mbfClient);
-  //     delete (mbfClientExePath);
-
-  //     return 1;
-  // }
-
-  // ROS_INFO("Waiting for map server");
-  // if (!mapClient.waitForExistence(ros::Duration(60.0, 0.0))) {
-  //     ROS_ERROR("Map server service not found.");
-  //     delete (reconfigServer);
-  //     delete (mbfClient);
-  //     delete (mbfClientExePath);
-  //     return 2;
-  // }
-
-  // ROS_INFO("Waiting for docking point server");
-  // if (!dockingPointClient.waitForExistence(ros::Duration(60.0, 0.0))) {
-  //     ROS_ERROR("Docking server service not found.");
-  //     delete (reconfigServer);
-  //     delete (mbfClient);
-  //     delete (mbfClientExePath);
-  //     return 2;
-  // }
-
-  // ROS_INFO("Waiting for nav point server");
-  // if (!setNavPointClient.waitForExistence(ros::Duration(60.0, 0.0))) {
-  //     ROS_ERROR("Set Nav Point server service not found.");
-  //     delete (reconfigServer);
-  //     delete (mbfClient);
-  //     delete (mbfClientExePath);
-  //     return 2;
-  // }
-
-  // ROS_INFO("Waiting for clear nav point server");
-  // if (!clearNavPointClient.waitForExistence(ros::Duration(60.0, 0.0))) {
-  //     ROS_ERROR("Clear Nav Point server service not found.");
-  //     delete (reconfigServer);
-  //     delete (mbfClient);
-  //     delete (mbfClientExePath);
-  //     return 2;
-  // }
-
-  // ROS_INFO("Waiting for move base flex");
-  // if (!mbfClient->waitForServer(ros::Duration(60.0, 0.0))) {
-  //     ROS_ERROR("Move base flex not found.");
-  //     delete (reconfigServer);
-  //     delete (mbfClient);
-  //     delete (mbfClientExePath);
-  //     return 3;
-  // }
-
-  // ROS_INFO("Waiting for mowing path progress server");
-  // if (!pathProgressClient.waitForExistence(ros::Duration(60.0, 0.0))) {
-  //     ROS_ERROR("FTCLocalPlanner progress server not found.");
-  //     delete (reconfigServer);
-  //     delete (mbfClient);
-  //     delete (mbfClientExePath);
-  //     return 3;
-  // }
 
   ROS_INFO("Got all servers, we can mow");
 
