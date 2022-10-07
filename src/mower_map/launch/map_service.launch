@@ -1,7 +1,7 @@
 <launch>
   
   <node pkg="mower_map" type="mower_map_service" name="map_service" output="screen">
-    <param name="map_path" type="string" value="$(find mower_map)/data/mower_map.bag"/>
+    <param name="map_path" type="string" value="$(find mower_map)/data/simulation_map.bag"/>
   </node>
 
 </launch>

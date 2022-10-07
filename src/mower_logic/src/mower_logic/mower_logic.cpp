@@ -58,6 +58,7 @@ actionlib::SimpleActionClient<mbf_msgs::MoveBaseAction> *mbfClient;
 actionlib::SimpleActionClient<mbf_msgs::ExePathAction> *mbfClientExePath;
 
 ros::Publisher cmd_vel_pub;
+ros::Publisher start_docking_pub;
 // ros::Publisher odometry_pub;
 // 保存的逻辑配置参数
 mower_logic::MowerLogicConfig last_config;
@@ -228,7 +229,7 @@ void stop() {
     stop.linear.x = 0;
     cmd_vel_pub.publish(stop);
 
-    setMowerEnabled(false);
+    // setMowerEnabled(false);
 
     // to be sure, call it again.
     // mower_msgs::MowerControlSrv mow_srv;
@@ -334,6 +335,12 @@ void ReachGoalReceived(const std_msgs::Bool::ConstPtr &msg) {
   reach_goal = msg->data;
 }
 
+void StartDocking(){
+  std_msgs::Bool start_docking;
+  start_docking.data = true;
+  start_docking_pub.publish(start_docking);
+}
+
 
 int main(int argc, char **argv) {
     ros::init(argc, argv, "mower_logic");
@@ -349,6 +356,7 @@ int main(int argc, char **argv) {
 
     // 控制指令发布器
     cmd_vel_pub = n->advertise<geometry_msgs::Twist>("/cmd_vel", 1);
+    start_docking_pub = n->advertise<std_msgs::Bool>("/start_docking", 1);
 
     ros::Publisher path_pub;
     ros::Publisher current_state_pub;
