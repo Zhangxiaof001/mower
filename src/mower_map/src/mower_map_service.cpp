@@ -591,7 +591,8 @@ int main(int argc, char **argv) {
       return 1;
     }
     
-    ROS_INFO("map_path : ", map_path);
+    ROS_INFO("map_path : %s", map_path.c_str());
+    docking_point.orientation.w = 1;
     // Load the default map file
     readMapFromFile(map_path);
 

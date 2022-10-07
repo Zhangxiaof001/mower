@@ -141,7 +141,7 @@ bool MowingBehavior::create_mowing_plan(int area_index) {
   // pathSrv.request.outer_offset = config.outline_offset;
   pathSrv.request.outer_offset = 0.2;
   // pathSrv.request.distance = config.tool_width;
-  pathSrv.request.distance = 0.5;
+  pathSrv.request.distance = 0.8;
   ROS_INFO("[coverage planner] angle:%f, distance:%f", pathSrv.request.angle, pathSrv.request.distance);
   if (!pathClient.call(pathSrv)) {
     ROS_ERROR_STREAM("Error during coverage planning");
