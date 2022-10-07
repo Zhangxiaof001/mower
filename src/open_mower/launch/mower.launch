@@ -3,6 +3,7 @@
 
     <!-- launch mower_service/high_level_control -->
     <node pkg="mower_comms" type="mower_comms" name="mower_comms" output="screen"/>
+    <node pkg="lp_robot" type="lp_robot_hw_node" name="lp_robot_hw_node" output="screen"/>
 
     <!-- map -->
     <include file="$(find mower_map)/launch/map_service.launch"/>
