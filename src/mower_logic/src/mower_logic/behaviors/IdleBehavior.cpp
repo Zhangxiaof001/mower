@@ -35,9 +35,10 @@ std::string IdleBehavior::state_name() {
 
 Behavior *IdleBehavior::execute() {
 
+     stop();
     ros::Rate r(25);
     while (ros::ok()) {
-        stop();
+    //    stop();
 
         // 退出充电基站？
         // if (manual_start_mowing ||
@@ -73,9 +74,12 @@ void IdleBehavior::enter() {
 
     // disable it, so that we don't start mowing immediately
     manual_start_mowing = false;
+    stop();
 }
 
 void IdleBehavior::exit() {
+ 
+    stop();
 }
 
 void IdleBehavior::reset() {

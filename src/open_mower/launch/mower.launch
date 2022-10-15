@@ -5,6 +5,13 @@
     <node pkg="mower_comms" type="mower_comms" name="mower_comms" output="screen"/>
     <node pkg="lp_robot" type="lp_robot_hw_node" name="lp_robot_hw_node" output="screen"/>
 
+    <include file="$(find  wit_ros_imu)/launch/hwt906_reader_ros_node.launch"/>
+    <include file="/home/yuxu/mower_ws/src/nmea_navsat_driver/launch/nmea_setence.launch"/>
+    <include file="/home/yuxu/mower_ws/src/nmea_navsat_driver/launch/nmea_driver_to_vel_fix.launch"/>
+
+    
+
+    
     <!-- map -->
     <include file="$(find mower_map)/launch/map_service.launch"/>
 
