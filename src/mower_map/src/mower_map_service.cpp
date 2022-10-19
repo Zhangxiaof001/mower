@@ -374,7 +374,7 @@ void buildMap() {
  */
 void saveMapToFile() {
     rosbag::Bag bag;
-    bag.open("/home/zxf/projects/open_mower_ros/record_map.bag", rosbag::bagmode::Write);
+    bag.open("/home/wheeltec/record_map.bag", rosbag::bagmode::Write);
 
     for (auto &area: mowing_areas) {
         bag.write("mowing_areas", ros::Time::now(), area);
@@ -577,16 +577,22 @@ bool clearNavPoint(mower_map::ClearNavPointSrvRequest &req, mower_map::ClearNavP
 
 int main(int argc, char **argv) {
     ros::init(argc, argv, "mower_map_service");
-
     ros::NodeHandle n;
+    ros::NodeHandle n_p("~");
     // 发布栅格地图
+    std::string map_data;
+    n_p.param("map_data",map_data, std::string(""));
+//    if(map_data.empty()){
+//	ROS_INFO("map data empty");
+//	return 0;
+ //   }
     map_pub = n.advertise<nav_msgs::OccupancyGrid>("mower_map_service/map", 10, true);
     map_areas_pub = n.advertise<mower_map::MapAreas>("mower_map_service/map_areas", 10, true);
     // 地图可视化
     map_server_viz_array_pub = n.advertise<visualization_msgs::MarkerArray>("mower_map_service/map_viz", 10, true);
 
     // Load the default map file
-    readMapFromFile("/home/zxf/projects/open_mower_ros/record_map.bag");
+    readMapFromFile(map_data);
 
     buildMap();
 

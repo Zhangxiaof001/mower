@@ -131,7 +131,7 @@ bool MowingBehavior::create_mowing_plan(int area_index) {
   // 2. 计算全覆盖路径
   slic3r_coverage_planner::PlanPath pathSrv;
   // pathSrv.request.angle = angle;
-  pathSrv.request.angle = 0;
+  pathSrv.request.angle = M_PI*0.75;
   // pathSrv.request.outline_count = config.outline_count;
   pathSrv.request.outline_count = 1;
   pathSrv.request.outline = mapSrv.response.area.area;

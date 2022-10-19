@@ -43,12 +43,13 @@ bool DockingBehavior::approach_docking_point() {
     {
         // Distance to approach docking point
         // 计算导航目标点
-        geometry_msgs::PoseStamped docking_approach_point = docking_pose_stamped;
-        docking_approach_point.pose.position.x -= cos(yaw) * config.docking_approach_distance;  // 2
-        docking_approach_point.pose.position.y -= sin(yaw) * config.docking_approach_distance;
+       // geometry_msgs::PoseStamped docking_approach_point = docking_pose_stamped;
+       // docking_approach_point.pose.position.x -= cos(yaw) * config.docking_approach_distance;  // 2
+       // docking_approach_point.pose.position.y -= sin(yaw) * config.docking_approach_distance;
         // move_base
         mbf_msgs::MoveBaseGoal moveBaseGoal;
-        moveBaseGoal.target_pose = docking_approach_point;
+	docking_pose_stamped.pose.orientation.w = 1;
+        moveBaseGoal.target_pose = docking_pose_stamped;
         moveBaseGoal.controller = "FTCPlanner";
         auto result = mbfClient->sendGoalAndWait(moveBaseGoal);
         if (result.state_ != result.SUCCEEDED) {
@@ -58,30 +59,30 @@ bool DockingBehavior::approach_docking_point() {
 
     // 
     {
-        mbf_msgs::ExePathGoal exePathGoal;
+       // mbf_msgs::ExePathGoal exePathGoal;
 
-        nav_msgs::Path path;
+        //nav_msgs::Path path;
 
         // 这里搞不懂？
-        int dock_point_count = config.docking_approach_distance * 10.0;  // 2
-        for (int i = 0; i <= dock_point_count; i++) {
-            geometry_msgs::PoseStamped docking_pose_stamped_front = docking_pose_stamped;
-            docking_pose_stamped_front.pose.position.x -= cos(yaw) * ((dock_point_count - i) / 10.0);
-            docking_pose_stamped_front.pose.position.y -= sin(yaw) * ((dock_point_count - i) / 10.0);
-            path.poses.push_back(docking_pose_stamped_front);
-        }
+       // int dock_point_count = config.docking_approach_distance * 10.0;  // 2
+       // for (int i = 0; i <= dock_point_count; i++) {
+         //   geometry_msgs::PoseStamped docking_pose_stamped_front = docking_pose_stamped;
+          //  docking_pose_stamped_front.pose.position.x -= cos(yaw) * ((dock_point_count - i) / 10.0);
+           // docking_pose_stamped_front.pose.position.y -= sin(yaw) * ((dock_point_count - i) / 10.0);
+        //    path.poses.push_back(docking_pose_stamped_front);
+       // }
 
-        exePathGoal.path = path;
-        exePathGoal.angle_tolerance = 1.0 * (M_PI / 180.0);
-        exePathGoal.dist_tolerance = 0.1;
-        exePathGoal.tolerance_from_action = true;
-        exePathGoal.controller = "FTCPlanner";
+       // exePathGoal.path = path;
+       // exePathGoal.angle_tolerance = 1.0 * (M_PI / 180.0);
+       // exePathGoal.dist_tolerance = 0.1;
+       // exePathGoal.tolerance_from_action = true;
+       // exePathGoal.controller = "FTCPlanner";
         ROS_INFO_STREAM("Executing Docking Approach");
 
-        auto approachResult = mbfClientExePath->sendGoalAndWait(exePathGoal);
-        if (approachResult.state_ != approachResult.SUCCEEDED) {
-            return false;
-        }
+       // auto approachResult = mbfClientExePath->sendGoalAndWait(exePathGoal);
+       // if (approachResult.state_ != approachResult.SUCCEEDED) {
+        //    return false;
+       // }
     }
 
     return true;
@@ -179,43 +180,43 @@ Behavior *DockingBehavior::execute() {
     bool approachSuccess = approach_docking_point();
 
     // 如果失败
-    if (!approachSuccess) {
-        ROS_ERROR("Error during docking approach.");
+   // if (!approachSuccess) {
+     //   ROS_ERROR("Error during docking approach.");
 
-        retryCount++;
-        if(retryCount <= config.docking_retry_count) {
+      //  retryCount++;
+       // if(retryCount <= config.docking_retry_count) {
             // 继续尝试
-            ROS_ERROR("Retrying docking");
-            return &UndockingBehavior::RETRY_INSTANCE;
-        }
+         //   ROS_ERROR("Retrying docking");
+           // return &UndockingBehavior::RETRY_INSTANCE;
+       // }
 
         // 失败超过一定次数，放弃
-        ROS_ERROR("Giving up on docking");
-        return &IdleBehavior::INSTANCE;
-    }
+       // ROS_ERROR("Giving up on docking");
+       // return &IdleBehavior::INSTANCE;
+   // }
 
     // Disable GPS
-    inApproachMode = false;
+   // inApproachMode = false;
     // setGPS(false);
 
     // 直线对接，为了回到充电座上
-    bool docked = dock_straight();
+   // bool docked = dock_straight();
 
     // 如果失败
-    if (!docked) {
-        ROS_ERROR("Error during docking.");
+   // if (!docked) {
+     //   ROS_ERROR("Error during docking.");
 
         // 继续尝试
-        retryCount++;
-        if(retryCount <= config.docking_retry_count) {
-            ROS_ERROR_STREAM("Retrying docking. Try " << retryCount << " / " << config.docking_retry_count);
-            return &UndockingBehavior::RETRY_INSTANCE;
-        }
+       // retryCount++;
+       // if(retryCount <= config.docking_retry_count) {
+         //   ROS_ERROR_STREAM("Retrying docking. Try " << retryCount << " / " << config.docking_retry_count);
+           // return &UndockingBehavior::RETRY_INSTANCE;
+      //  }
 
         // 失败超过一定次数，放弃
-        ROS_ERROR("Giving up on docking");
-        return &IdleBehavior::INSTANCE;
-    }
+       // ROS_ERROR("Giving up on docking");
+       // return &IdleBehavior::INSTANCE;
+  //  }
 
     return &IdleBehavior::INSTANCE;
 }
