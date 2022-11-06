@@ -17,7 +17,7 @@
 #include <dynamic_reconfigure/server.h>
 #include "IdleBehavior.h"
 #include "AreaRecordingBehavior.h"
-
+#include "multy_target_circle_behavior.h"
 extern void stop();
 extern void setEmergencyMode(bool emergency);
 
@@ -52,7 +52,9 @@ Behavior *IdleBehavior::execute() {
           
           return &MowingBehavior::INSTANCE;
         }
-
+        if (start_multy_tareget_nav) {
+          return &MultyTargetCircle::INSTANCE;
+        }
         // 开始记录割草区域（边界、障碍物）
         if(start_area_recorder) {
             return &AreaRecordingBehavior::INSTANCE;
@@ -104,7 +106,7 @@ void IdleBehavior::command_s1() {
 }
 
 void IdleBehavior::command_s2() {
-
+    start_multy_tareget_nav = true;
 }
 
 bool IdleBehavior::redirect_joystick() {

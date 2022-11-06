@@ -25,6 +25,7 @@ class IdleBehavior : public Behavior {
 private:
     bool manual_start_mowing = false;
     bool start_area_recorder = false;
+    bool start_multy_tareget_nav =false;
 public:
     static IdleBehavior INSTANCE;
 
